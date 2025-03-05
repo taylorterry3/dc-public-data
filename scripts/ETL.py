@@ -12,6 +12,7 @@ STOP_DATA_2023_2024 = pd.read_csv(
 
 ARREST_DATA = pd.read_csv("../data/raw/Adult_Arrests.csv.gz", low_memory=False)
 ARREST_DATA_2023 = pd.read_csv("../data/raw/Adult_Arrests_2023.csv", low_memory=False)
+ARREST_DATA_2024 = pd.read_excel("../data/raw/2024AdultArrests_OpenData.xlsx")
 
 INCIDENT_DATA = pd.concat(
     map(pd.read_csv, glob.glob("../data/raw/Crime_Incidents*")), ignore_index=True
@@ -20,7 +21,7 @@ INCIDENT_DATA_ALL = pd.read_csv(
     "../data/raw/dc-crimes-search-results.csv", low_memory=False
 )
 
-COLUMN_TRANSLATION_2023 = {
+COLUMN_TRANSLATION_23_24 = {
     "Arrestee Type": "TYPE",
     "Arrest Year": "YEAR",
     "Arrest Date": "DATE_",
@@ -97,15 +98,20 @@ if __name__ == "__main__":
     )
 
     ARREST_DATA_2023.columns = [
-        COLUMN_TRANSLATION_2023[c] for c in ARREST_DATA_2023.columns
+        COLUMN_TRANSLATION_23_24[c] for c in ARREST_DATA_2023.columns
+    ]
+
+    ARREST_DATA_2024.columns = [
+        COLUMN_TRANSLATION_23_24[c] for c in ARREST_DATA_2024.columns
     ]
 
     ARREST_DATA_PRE_23 = data_cleanup(ARREST_DATA, "DATE_")
 
     ARREST_DATA_2023 = data_cleanup(ARREST_DATA_2023, "DATE_")
+    ARREST_DATA_2024 = data_cleanup(ARREST_DATA_2024, "DATE_")
 
     ARREST_DATA = pd.concat(
-        [ARREST_DATA_PRE_23, ARREST_DATA_2023], ignore_index=True
+        [ARREST_DATA_PRE_23, ARREST_DATA_2023, ARREST_DATA_2024], ignore_index=True
     ).to_csv("../data/clean/arrest_data.csv.gz", index=False, compression="gzip")
 
     THREE11_FILES = glob.glob("../data/raw/311_City_Service_Requests*.csv.gz")
