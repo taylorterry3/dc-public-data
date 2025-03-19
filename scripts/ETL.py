@@ -112,7 +112,11 @@ if __name__ == "__main__":
 
     ARREST_DATA = pd.concat(
         [ARREST_DATA_PRE_23, ARREST_DATA_2023, ARREST_DATA_2024], ignore_index=True
-    ).to_csv("../data/clean/arrest_data.csv.gz", index=False, compression="gzip")
+    )
+    ARREST_DATA = arrest_category_cleanup(ARREST_DATA)
+    ARREST_DATA.to_csv(
+        "../data/clean/arrest_data.csv.gz", index=False, compression="gzip"
+    )
 
     THREE11_FILES = glob.glob("../data/raw/311_City_Service_Requests*.csv.gz")
 
