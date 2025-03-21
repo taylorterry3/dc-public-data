@@ -88,14 +88,23 @@ def render_markdown(markdown_file, output_file):
 
 
 def main():
-    # Get the reports directory
-    reports_dir = Path("reports/wards")
+    # Get the reports directories
+    markdown_dir = Path("reports/wards")
+    html_dir = Path("reports/html")
+
+    # Create HTML directory if it doesn't exist
+    html_dir.mkdir(parents=True, exist_ok=True)
 
     # Process each markdown file
-    for markdown_file in reports_dir.glob("ward_*_report.md"):
-        output_file = markdown_file.with_suffix(".html")
+    for markdown_file in markdown_dir.glob("*.md"):
+        output_file = html_dir / markdown_file.name.replace(".md", ".html")
         print(f"Converting {markdown_file} to {output_file}")
         render_markdown(markdown_file, output_file)
+
+    # Clean up any existing HTML files in the wards directory
+    for html_file in markdown_dir.glob("*.html"):
+        print(f"Removing {html_file}")
+        html_file.unlink()
 
 
 if __name__ == "__main__":

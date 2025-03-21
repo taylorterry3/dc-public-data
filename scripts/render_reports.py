@@ -10,7 +10,7 @@ CSS = """
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         line-height: 1.6;
-        max-width: 1200px;
+        max-width: 800px;
         margin: 0 auto;
         padding: 2rem;
         background-color: #f5f5f5;
@@ -34,9 +34,10 @@ CSS = """
         border-collapse: collapse;
         width: 100%;
         margin: 1rem 0;
+        font-size: 0.9em;
     }
     th, td {
-        padding: 0.75rem;
+        padding: 0.5rem;
         text-align: left;
         border: 1px solid #ddd;
     }
@@ -93,8 +94,8 @@ def convert_md_to_html(md_file: Path) -> None:
 
 
 def main():
-    # Get all markdown files in the wards directory
-    reports_dir = Path("../reports/wards")
+    # Get all markdown files in the reports directory
+    reports_dir = Path("reports")
     md_files = list(reports_dir.glob("*.md"))
 
     print(f"Converting {len(md_files)} reports to HTML...")
@@ -103,7 +104,7 @@ def main():
     for md_file in tqdm(md_files, desc="Converting reports"):
         convert_md_to_html(md_file)
 
-    print("HTML reports have been generated in the reports/wards directory.")
+    print("HTML reports have been generated in the reports directory.")
 
 
 if __name__ == "__main__":

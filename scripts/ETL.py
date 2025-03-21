@@ -168,9 +168,7 @@ if __name__ == "__main__":
             .sort_index()
         )
 
-    ARREST_DATA.to_csv(
-        "data/clean/arrest_data.csv.gz", index=False, compression="gzip"
-    )
+    ARREST_DATA.to_csv("data/clean/arrest_data.csv.gz", index=False, compression="gzip")
 
     THREE11_FILES = glob.glob("data/raw/311_City_Service_Requests*.csv.gz")
 
