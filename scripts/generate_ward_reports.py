@@ -9,18 +9,17 @@ from tqdm import tqdm
 
 # Set style for plots
 plt.style.use("seaborn-v0_8")  # Using a built-in style
-sns.set_palette("husl")
+sns.set_palette("Set2")  # Changed from "husl" to "Set2" for better contrast
 
 print("Reading data...")
 # Read the data
 arrest_data = pd.read_csv(
-    "../data/clean/arrest_data.csv.gz",
+    "data/clean/arrest_data.csv.gz",
     low_memory=False,
 )
 
-# Parse date columns and ensure consistent timezone handling
-arrest_data["date"] = pd.to_datetime(arrest_data["date_"], format="mixed", utc=True)
-arrest_data = arrest_data.dropna(subset=["date"])  # Remove rows with invalid dates
+# Parse the date column
+arrest_data["date"] = pd.to_datetime(arrest_data["date"])
 
 print("\nColumns in the data:")
 print(arrest_data.columns.tolist())
@@ -41,8 +40,19 @@ arrest_data = arrest_data[
 ]  # Remove any rows with invalid ward numbers
 
 # Create reports directory if it doesn't exist
-reports_dir = Path("../reports/wards")
+reports_dir = Path("reports/wards")
 reports_dir.mkdir(parents=True, exist_ok=True)
+
+
+def format_percentage(value):
+    """Format a percentage value with a + sign for positive values."""
+    try:
+        value_int = int(round(float(value)))
+        if value_int > 0:
+            return "+" + str(value_int) + "%"
+        return str(value_int) + "%"
+    except (ValueError, TypeError):
+        return "0%"
 
 
 def generate_ward_report(ward_num):
@@ -143,7 +153,8 @@ def generate_ward_report(ward_num):
 
     # Create plots with optimized settings
     plt.figure(figsize=(12, 6))
-    monthly_trends.plot(kind="line", title=f"Ward {ward_num} Monthly Arrests")
+    monthly_trends.plot(kind="line")
+    plt.title(f"Ward {ward_num} Monthly Arrests", fontsize=16, pad=20)
     plt.xlabel("Date")
     plt.ylabel("Number of Arrests")
 
@@ -161,69 +172,93 @@ def generate_ward_report(ward_num):
     plt.close()
 
     # Calculate category distribution
-    plt.figure(figsize=(10, 6))
-    ward_data.category.value_counts().head(10).plot(kind="bar")
-    plt.xticks(rotation=45, ha="right")
-    plt.title(f"Ward {ward_num} Top 10 Arrest Categories")
-    plt.xlabel("Category")
-    plt.ylabel("Number of Arrests")
+    plt.figure(figsize=(12, 8))
+
+    # Get all categories and sort alphabetically
+    all_categories = sorted(
+        set(ward_data_2023.category.unique()) | set(ward_data_2024.category.unique())
+    )
+
+    # Create data for grouped bars
+    categories_2023 = ward_data_2023.category.value_counts()
+    categories_2024 = ward_data_2024.category.value_counts()
+
+    # Ensure all categories are present in both series
+    categories_2023 = categories_2023.reindex(all_categories).fillna(0)
+    categories_2024 = categories_2024.reindex(all_categories).fillna(0)
+
+    # Create grouped bar plot
+    y_pos = np.arange(len(all_categories))
+    width = 0.35
+
+    plt.barh(y_pos - width / 2, categories_2023, width, label="2023")
+    plt.barh(y_pos + width / 2, categories_2024, width, label="2024")
+
+    plt.yticks(y_pos, all_categories)
+    plt.xlabel("Number of Arrests")
+    plt.title(f"Ward {ward_num} Arrest Categories", fontsize=16, pad=20)
+    plt.legend()
+    plt.gca().invert_yaxis()  # Invert y-axis to show ascending alphabetical order
     plt.tight_layout()
     plt.savefig(reports_dir / f"ward_{ward_num}_categories.png", dpi=100)
     plt.close()
 
     # Generate descriptive text
-    description = f"""# Ward {ward_num} Arrest Analysis Report
+    description = "## Ward {} MPD Adult Arrest Summary, 2023-2024\n\n".format(ward_num)
+    description += "### Overview\n"
+    description += "In 2024 there were {:,} adult arrests in Ward {}, a {} change from 2023 and a {} change from the 2021-2023 average. The second half of 2024 saw {:,} arrests, compared to {:,} in the first half.\n\n".format(
+        arrests_2024,
+        ward_num,
+        format_percentage(pct_change_2023),
+        format_percentage(pct_change_avg),
+        arrests_2024_h2,
+        arrests_2024_h1,
+    )
 
-## Overview
-In 2024 there were {arrests_2024:,} adult arrests in Ward {ward_num}, a {pct_change_2023:+.1f}% change from 2023 and a {pct_change_avg:+.1f}% change from the 2021-2023 average. The second half of 2024 saw {arrests_2024_h2:,} arrests, compared to {arrests_2024_h1:,} in the first half.
+    description += "### Top Arrest Categories in 2024\n"
+    description += "| Category | 2023 | 2024 | Change |\n"
+    description += "|----------|------:|------:|---------:|\n"
 
-## Top Arrest Categories in 2024
-| Category | 2024 | 2023 | Change |
-|----------|------|------|---------|
-"""
     for category in ward_data_2024.category.value_counts().head(5).index:
         count_2024 = len(ward_data_2024[ward_data_2024.category == category])
         count_2023 = len(ward_data_2023[ward_data_2023.category == category])
         pct_change = (
             ((count_2024 - count_2023) / count_2023 * 100) if count_2023 > 0 else 0
         )
-        description += (
-            f"| {category} | {count_2024:,} | {count_2023:,} | {pct_change:+.1f}% |\n"
+        description += "| {} | {:,} | {:,} | {} |\n".format(
+            category, count_2023, count_2024, format_percentage(pct_change)
         )
 
-    description += f"""
-## Categories with Largest Percentage Increases from 2023
-| Category | 2024 | 2023 | Change |
-|----------|------|------|---------|
-"""
+    description += "\n### Arrest Categories with Largest Increase 2023-2024\n"
+    description += "| Category | 2023 | 2024 | Change |\n"
+    description += "|----------|------:|------:|---------:|\n"
+
     for category in top_changes.index:
         count_2024 = int(top_changes.loc[category, "2024"])
         count_2023 = int(top_changes.loc[category, "2023"])
         pct_change = top_changes.loc[category, "pct_change"]
-        description += (
-            f"| {category} | {count_2024:,} | {count_2023:,} | {pct_change:+.1f}% |\n"
+        description += "| {} | {:,} | {:,} | {} |\n".format(
+            category, count_2023, count_2024, format_percentage(pct_change)
         )
 
-    description += f"""
-## Categories with Largest Percentage Increases (H2 vs H1 2024)
-| Category | H2 2024 | H1 2024 | Change |
-|----------|---------|---------|---------|
-"""
+    description += "\n### Arrest Categories with Largest Increase H1-H2 2024\n"
+    description += "| Category | H1 2024 | H2 2024 | Change |\n"
+    description += "|----------|---------:|---------:|---------:|\n"
+
     for category in top_half_changes.index:
         count_h2 = int(top_half_changes.loc[category, "H2"])
         count_h1 = int(top_half_changes.loc[category, "H1"])
         pct_change = top_half_changes.loc[category, "pct_change"]
-        description += (
-            f"| {category} | {count_h2:,} | {count_h1:,} | {pct_change:+.1f}% |\n"
+        description += "| {} | {:,} | {:,} | {} |\n".format(
+            category, count_h1, count_h2, format_percentage(pct_change)
         )
 
-    description += f"""
-## Monthly Trends
-![Monthly Arrest Trends](ward_{ward_num}_monthly_trends.png)
-
-## Category Distribution
-![Top 10 Arrest Categories](ward_{ward_num}_categories.png)
-"""
+    description += "\n### Monthly Trends\n"
+    description += "![Monthly Arrest Trends](ward_{}_monthly_trends.png)\n\n".format(
+        ward_num
+    )
+    description += "### Arrests by Category, 2023-2024\n"
+    description += "![Arrests by category](ward_{}_categories.png)\n".format(ward_num)
 
     # Save the report
     with open(reports_dir / f"ward_{ward_num}_report.md", "w") as f:

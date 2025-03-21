@@ -7,20 +7,20 @@ import geopandas as gpd
 from shapely.geometry import Point
 
 
-STOP_DATA_OLD = pd.read_csv("../data/raw/Stop_Data.csv.gz", low_memory=False)
+STOP_DATA_OLD = pd.read_csv("data/raw/Stop_Data_2023.csv.gz", low_memory=False)
 STOP_DATA_2023_2024 = pd.read_csv(
-    "../data/raw/Stop_Data_2023-2024.csv.gz", low_memory=False
+    "data/raw/Stop_Data_2023-2024.csv.gz", low_memory=False
 )
 
-ARREST_DATA = pd.read_csv("../data/raw/Adult_Arrests.csv.gz", low_memory=False)
-ARREST_DATA_2023 = pd.read_csv("../data/raw/Adult_Arrests_2023.csv", low_memory=False)
-ARREST_DATA_2024 = pd.read_excel("../data/raw/2024AdultArrests_OpenData.xlsx")
+ARREST_DATA = pd.read_csv("data/raw/Adult_Arrests.csv.gz", low_memory=False)
+ARREST_DATA_2023 = pd.read_csv("data/raw/Adult_Arrests_2023.csv", low_memory=False)
+ARREST_DATA_2024 = pd.read_excel("data/raw/2024AdultArrests_OpenData.xlsx")
 
 INCIDENT_DATA = pd.concat(
-    map(pd.read_csv, glob.glob("../data/raw/Crime_Incidents*")), ignore_index=True
+    map(pd.read_csv, glob.glob("data/raw/Crime_Incidents*")), ignore_index=True
 )
 INCIDENT_DATA_ALL = pd.read_csv(
-    "../data/raw/dc-crimes-search-results.csv", low_memory=False
+    "data/raw/dc-crimes-search-results.csv", low_memory=False
 )
 
 COLUMN_TRANSLATION_23_24 = {
@@ -57,10 +57,11 @@ def data_cleanup(df: pd.DataFrame, date_col: str) -> pd.DataFrame:
     """
     Parse dates and create some convenience fields
     """
-    df["date"] = pd.to_datetime(df[date_col], format="mixed")
+    # Parse dates and ensure consistent timezone handling
+    df["date"] = pd.to_datetime(df[date_col], format="mixed", utc=True)
     df["month_year"] = df.date.dt.strftime("%Y-%m")
     if "YEAR" not in df.columns:
-        df["year"] = df.date.dt.strftime("%Y")
+        df["year"] = df.date.dt.year
     df.columns = [c.lower() for c in df.columns]
     return df
 
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     )
 
     data_cleanup(STOP_DATA, "DATETIME").drop_duplicates(subset="ccn_anonymized").to_csv(
-        "../data/clean/stop_data.csv.gz", index=False, compression="gzip"
+        "data/clean/stop_data.csv.gz", index=False, compression="gzip"
     )
 
     ARREST_DATA_2023.columns = [
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     print("\nAdding ward information to arrest data...")
 
     # Read the ward shapefile
-    wards = gpd.read_file("../data/raw/Wards_from_2022.geojson")
+    wards = gpd.read_file("data/raw/Wards_from_2022.geojson")
 
     # Create geometry column for arrest points
     ARREST_DATA["geometry"] = ARREST_DATA.apply(
@@ -141,17 +142,37 @@ if __name__ == "__main__":
     # Drop the geometry column
     ARREST_DATA = ARREST_DATA.drop(columns=["geometry"])
 
+    # Convert WARD to integer and remove rows with missing ward values
+    ARREST_DATA = ARREST_DATA.dropna(subset=["WARD"])
+    ARREST_DATA["WARD"] = ARREST_DATA["WARD"].astype(int)
+
+    # Remove rows with missing category values only if they're from before 2019
+    ARREST_DATA["year"] = ARREST_DATA["date"].dt.year
+    missing_categories_before_2019 = ARREST_DATA[
+        (ARREST_DATA["category"].isna()) & (ARREST_DATA["year"] < 2019)
+    ]
+    ARREST_DATA = ARREST_DATA.drop(missing_categories_before_2019.index)
+
     # Print some stats to verify the join
     print("\nArrests by ward:")
     print(ARREST_DATA["WARD"].value_counts().sort_index())
     print("\nArrests with no ward (should be 0):")
     print(ARREST_DATA["WARD"].isna().sum())
+    print("\nArrests with no category (should only be from 2019 onwards):")
+    print(ARREST_DATA["category"].isna().sum())
+    if ARREST_DATA["category"].isna().sum() > 0:
+        print("\nMissing categories by year:")
+        print(
+            ARREST_DATA[ARREST_DATA["category"].isna()]["year"]
+            .value_counts()
+            .sort_index()
+        )
 
     ARREST_DATA.to_csv(
-        "../data/clean/arrest_data.csv.gz", index=False, compression="gzip"
+        "data/clean/arrest_data.csv.gz", index=False, compression="gzip"
     )
 
-    THREE11_FILES = glob.glob("../data/raw/311_City_Service_Requests*.csv.gz")
+    THREE11_FILES = glob.glob("data/raw/311_City_Service_Requests*.csv.gz")
 
     THREE11_YEARS = []
 
@@ -164,13 +185,13 @@ if __name__ == "__main__":
 
     for idx, chunk in enumerate(np.array_split(THREE11_DATA, 3)):
         chunk.to_csv(
-            f"../data/clean/311_data_part_{idx}.csv.gz", index=False, compression="gzip"
+            f"data/clean/311_data_part_{idx}.csv.gz", index=False, compression="gzip"
         )
 
     data_cleanup(INCIDENT_DATA, "START_DATE").to_csv(
-        "../data/clean/incident_data.csv.gz", index=False, compression="gzip"
+        "data/clean/incident_data.csv.gz", index=False, compression="gzip"
     )
 
     data_cleanup(INCIDENT_DATA_ALL, "START_DATE").to_csv(
-        "../data/clean/incident_data_all.csv.gz", index=False, compression="gzip"
+        "data/clean/incident_data_all.csv.gz", index=False, compression="gzip"
     )
