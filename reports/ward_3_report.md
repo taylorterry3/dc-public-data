@@ -15,8 +15,8 @@ The table below shows the most common types of arrests in Ward 3 during 2024, co
 | Other Crimes | 36 | 34 | -6% | -6% |
 | Driving/Boating While Intoxicated | 16 | 20 | +25% | 0% |
 | Damage to Property | 21 | 19 | -10% | -16% |
-| Weapon Violations | 12 | 12 | 0% | -10% |
 | Offenses Against Family & Children | 13 | 12 | -8% | -8% |
+| Weapon Violations | 12 | 12 | 0% | -10% |
 | Assault with a Dangerous Weapon | 16 | 12 | -25% | +9% |
 
 ### Arrest Categories with Largest Increase 2023-2024

@@ -20,10 +20,10 @@ def test_report_sections(reports_dir):
     required_sections = [
         "Overview",
         "Top Arrest Categories in 2024",
-        "Categories with Largest Percentage Increases from 2023",
-        "Categories with Largest Percentage Increases (H2 vs H1 2024)",
+        "Arrest Categories with Largest Increase 2023-2024",
+        "Arrest Categories with Largest Increase H1-H2 2024",
         "Monthly Trends",
-        "Category Distribution",
+        "Arrests by Category, 2023-2024",
     ]
 
     for ward in range(1, 9):

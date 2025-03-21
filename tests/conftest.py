@@ -14,4 +14,4 @@ def arrest_data():
 @pytest.fixture
 def reports_dir():
     """Get the path to the reports directory."""
-    return Path("reports/wards")
+    return Path("reports")
