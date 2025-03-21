@@ -3,6 +3,8 @@
 import pandas as pd
 import numpy as np
 import glob
+import geopandas as gpd
+from shapely.geometry import Point
 
 
 STOP_DATA_OLD = pd.read_csv("../data/raw/Stop_Data.csv.gz", low_memory=False)
@@ -55,7 +57,7 @@ def data_cleanup(df: pd.DataFrame, date_col: str) -> pd.DataFrame:
     """
     Parse dates and create some convenience fields
     """
-    df["date"] = pd.to_datetime(df[date_col])
+    df["date"] = pd.to_datetime(df[date_col], format="mixed")
     df["month_year"] = df.date.dt.strftime("%Y-%m")
     if "YEAR" not in df.columns:
         df["year"] = df.date.dt.strftime("%Y")
@@ -114,6 +116,37 @@ if __name__ == "__main__":
         [ARREST_DATA_PRE_23, ARREST_DATA_2023, ARREST_DATA_2024], ignore_index=True
     )
     ARREST_DATA = arrest_category_cleanup(ARREST_DATA)
+
+    # Add ward information using spatial join
+    print("\nAdding ward information to arrest data...")
+
+    # Read the ward shapefile
+    wards = gpd.read_file("../data/raw/Wards_from_2022.geojson")
+
+    # Create geometry column for arrest points
+    ARREST_DATA["geometry"] = ARREST_DATA.apply(
+        lambda row: Point(row["arrest_longitude"], row["arrest_latitude"]), axis=1
+    )
+
+    # Convert arrest data to GeoDataFrame
+    arrest_gdf = gpd.GeoDataFrame(
+        ARREST_DATA, geometry="geometry", crs="EPSG:4326"  # WGS84 coordinate system
+    )
+
+    # Perform spatial join
+    ARREST_DATA = gpd.sjoin(
+        arrest_gdf, wards[["WARD", "NAME", "geometry"]], how="left", predicate="within"
+    )
+
+    # Drop the geometry column
+    ARREST_DATA = ARREST_DATA.drop(columns=["geometry"])
+
+    # Print some stats to verify the join
+    print("\nArrests by ward:")
+    print(ARREST_DATA["WARD"].value_counts().sort_index())
+    print("\nArrests with no ward (should be 0):")
+    print(ARREST_DATA["WARD"].isna().sum())
+
     ARREST_DATA.to_csv(
         "../data/clean/arrest_data.csv.gz", index=False, compression="gzip"
     )
