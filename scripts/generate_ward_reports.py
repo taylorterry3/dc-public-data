@@ -325,26 +325,31 @@ def generate_citywide_report(df):
 
     # Top Categories section
     description += "### Top Arrest Categories in 2024\n"
+    description += "The table below shows the most common types of arrests citywide during 2024, compared with 2023 counts.\n\n"
     description += generate_category_table(
         df, stats["top_10_changes"], is_citywide=True
     )
 
     # Largest Increase section
     description += "\n### Arrest Categories with Largest Increase 2023-2024\n"
+    description += "This table highlights the arrest categories that saw the largest percentage increases citywide from 2023 to 2024.\n\n"
     finite_changes = [c for c in stats["category_changes"] if c[3] != float("inf")]
     finite_changes.sort(key=lambda x: x[3], reverse=True)  # Sort by percentage change
     description += generate_category_table(df, finite_changes[:10], is_citywide=True)
 
     # H1-H2 Changes section
     description += "\n### Arrest Categories with Largest Increase H1-H2 2024\n"
+    description += "The following table compares arrest counts between the first half (H1) and second half (H2) of 2024.\n\n"
     description += generate_h1h2_table(
         df, stats["categories_h1_h2"][:10], is_citywide=True
     )
 
     # Visualizations section
     description += "\n### Monthly Trends\n"
+    description += "The line graph below shows the month-by-month pattern of total arrests citywide over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes.\n\n"
     description += "![Monthly Arrest Trends](citywide_monthly_trends.png)\n\n"
     description += "### Arrests by Category, 2023-2024\n"
+    description += "This chart compares the distribution of arrests across different categories between 2023 and 2024. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.\n\n"
     description += "![Arrests by category](citywide_categories.png)\n"
 
     return description

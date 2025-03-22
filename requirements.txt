@@ -7,6 +7,8 @@ geopandas==0.14.1
 jdcal==1.4.1
 kiwisolver==1.4.8
 matplotlib==3.10.1
+markdown==3.7
+markdown2==2.5.3
 numpy==2.2.3
 openpyexcel==2.5.14
 openpyxl==3.1.5
@@ -18,4 +20,5 @@ python-dateutil==2.9.0.post0
 pytz==2025.1
 seaborn==0.13.2
 six==1.17.0
+tqdm==4.67.1
 tzdata==2025.1

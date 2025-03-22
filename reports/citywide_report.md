@@ -4,6 +4,8 @@
 In 2024 there were 19,263 adult arrests citywide, a +27% change from 2023 and a +30% change from the 2021-2023 average. The second half of 2024 saw 9,883 arrests, compared to 9,380 in the first half.
 
 ### Top Arrest Categories in 2024
+The table below shows the most common types of arrests citywide during 2024, compared with 2023 counts.
+
 | Category | 2023 | 2024 | Change |
 |----------|------:|------:|---------:|
 | Simple Assault | 5,002 | 4,570 | -9% |
@@ -18,6 +20,8 @@ In 2024 there were 19,263 adult arrests citywide, a +27% change from 2023 and a 
 | Damage to Property | 627 | 527 | -16% |
 
 ### Arrest Categories with Largest Increase 2023-2024
+This table highlights the arrest categories that saw the largest percentage increases citywide from 2023 to 2024.
+
 | Category | 2023 | 2024 | Change |
 |----------|------:|------:|---------:|
 | Liquor Law Violations | 164 | 907 | +453% |
@@ -32,6 +36,8 @@ In 2024 there were 19,263 adult arrests citywide, a +27% change from 2023 and a 
 | Gambling | 5 | 7 | +40% |
 
 ### Arrest Categories with Largest Increase H1-H2 2024
+The following table compares arrest counts between the first half (H1) and second half (H2) of 2024.
+
 | Category | H1 2024 | H2 2024 | Change |
 |----------|---------:|---------:|---------:|
 | Prostitution | 7 | 13 | +86% |
@@ -46,7 +52,11 @@ In 2024 there were 19,263 adult arrests citywide, a +27% change from 2023 and a 
 | Damage to Property | 263 | 264 | 0% |
 
 ### Monthly Trends
+The line graph below shows the month-by-month pattern of total arrests citywide over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes.
+
 ![Monthly Arrest Trends](citywide_monthly_trends.png)
 
 ### Arrests by Category, 2023-2024
+This chart compares the distribution of arrests across different categories between 2023 and 2024. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.
+
 ![Arrests by category](citywide_categories.png)
