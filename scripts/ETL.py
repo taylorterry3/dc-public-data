@@ -7,14 +7,14 @@ import geopandas as gpd
 from shapely.geometry import Point
 
 
-STOP_DATA_OLD = pd.read_csv("data/raw/Stop_Data_2023.csv.gz", low_memory=False)
+STOP_DATA_OLD = pd.read_csv("data/raw/Stop_Data.csv.gz", low_memory=False)
 STOP_DATA_2023_2024 = pd.read_csv(
     "data/raw/Stop_Data_2023-2024.csv.gz", low_memory=False
 )
 
 ARREST_DATA = pd.read_csv("data/raw/Adult_Arrests.csv.gz", low_memory=False)
-ARREST_DATA_2023 = pd.read_csv("data/raw/Adult_Arrests_2023.csv", low_memory=False)
-ARREST_DATA_2024 = pd.read_excel("data/raw/2024AdultArrests_OpenData.xlsx")
+# ARREST_DATA_2023 = pd.read_csv("data/raw/Adult_Arrests_2023.csv", low_memory=False)
+# ARREST_DATA_2024 = pd.read_excel("data/raw/2024AdultArrests_OpenData.xlsx")
 
 INCIDENT_DATA = pd.concat(
     map(pd.read_csv, glob.glob("data/raw/Crime_Incidents*")), ignore_index=True
@@ -100,22 +100,8 @@ if __name__ == "__main__":
         "data/clean/stop_data.csv.gz", index=False, compression="gzip"
     )
 
-    ARREST_DATA_2023.columns = [
-        COLUMN_TRANSLATION_23_24[c] for c in ARREST_DATA_2023.columns
-    ]
+    ARREST_DATA = data_cleanup(ARREST_DATA, "DATE_")
 
-    ARREST_DATA_2024.columns = [
-        COLUMN_TRANSLATION_23_24[c] for c in ARREST_DATA_2024.columns
-    ]
-
-    ARREST_DATA_PRE_23 = data_cleanup(ARREST_DATA, "DATE_")
-
-    ARREST_DATA_2023 = data_cleanup(ARREST_DATA_2023, "DATE_")
-    ARREST_DATA_2024 = data_cleanup(ARREST_DATA_2024, "DATE_")
-
-    ARREST_DATA = pd.concat(
-        [ARREST_DATA_PRE_23, ARREST_DATA_2023, ARREST_DATA_2024], ignore_index=True
-    )
     ARREST_DATA = arrest_category_cleanup(ARREST_DATA)
 
     # Add ward information using spatial join
@@ -146,12 +132,7 @@ if __name__ == "__main__":
     ARREST_DATA = ARREST_DATA.dropna(subset=["WARD"])
     ARREST_DATA["WARD"] = ARREST_DATA["WARD"].astype(int)
 
-    # Remove rows with missing category values only if they're from before 2019
     ARREST_DATA["year"] = ARREST_DATA["date"].dt.year
-    missing_categories_before_2019 = ARREST_DATA[
-        (ARREST_DATA["category"].isna()) & (ARREST_DATA["year"] < 2019)
-    ]
-    ARREST_DATA = ARREST_DATA.drop(missing_categories_before_2019.index)
 
     # Print some stats to verify the join
     print("\nArrests by ward:")

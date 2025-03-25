@@ -1,6 +1,16 @@
 ## Ward 1 MPD Adult Arrest Summary, 2023-2024
 
-### Overview
+## Background
+
+MPD recently made its annual public release of Adult Arrests data, covering 19,263 arrests in 2024. This data represents the first full year of data available since Chief Smith took office in November of 2023, and reveals major changes in policing strategy over that timeframe. This report begins with an overview of citywide trends, and then explores the data specific to Ward 1.
+
+This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. A complete index of these reports for each Ward is available at https://tinyurl.com/3xxzw4pp. Taylor can be reached at taylor.terry@gmail.com.
+
+### Citywide Overview
+
+In 2024 there were 19,263 adult arrests citywide, a +27% change from 2023 and a +30% change from the 2021-2023 average. This represents a substantial increase in arrests per sworn officer, which fell sharply after 2020 from an average of 7.7 arrests per officer per year in 2016-2019 to 4.3 in 2021-2023.
+
+### Ward 1 Overview
 In 2024 there were 2,820 adult arrests in Ward 1, a +66% change from 2023 (citywide: +27%) and a +89% change from the 2021-2023 average (citywide: +30%). The second half of 2024 saw 1,478 arrests, compared to 1,342 in the first half.
 
 ### Top Arrest Categories in 2024
@@ -40,6 +50,9 @@ The following table compares arrest counts between the first half (H1) and secon
 
 | Category | H1 2024 | H2 2024 | Ward 1 Change | Citywide Change |
 |----------|---------:|---------:|---------:|----------------:|
+| Fraud and Financial Crimes | 0 | 2 | N/A | -38% |
+| Gambling | 0 | 2 | N/A | +33% |
+| Kidnapping | 0 | 1 | N/A | 0% |
 | Narcotics | 91 | 174 | +91% | +15% |
 | Aggravated Assault | 10 | 16 | +60% | -7% |
 | Assault with a Dangerous Weapon | 17 | 23 | +35% | -3% |
@@ -47,9 +60,6 @@ The following table compares arrest counts between the first half (H1) and secon
 | Release Violations/Fugitive | 104 | 131 | +26% | -8% |
 | Theft from Auto | 4 | 5 | +25% | -24% |
 | Liquor Law Violations | 95 | 113 | +19% | +23% |
-| Theft | 233 | 277 | +19% | +5% |
-| Robbery | 22 | 25 | +14% | -3% |
-| Simple Assault | 236 | 268 | +14% | -1% |
 
 ### Monthly Trends
 The line graph below shows the month-by-month pattern of total arrests in Ward 1 over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes. Note that all arrest locations are based on current ward boundaries.

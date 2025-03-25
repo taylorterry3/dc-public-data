@@ -1,6 +1,16 @@
 ## Ward 7 MPD Adult Arrest Summary, 2023-2024
 
-### Overview
+## Background
+
+MPD recently made its annual public release of Adult Arrests data, covering 19,263 arrests in 2024. This data represents the first full year of data available since Chief Smith took office in November of 2023, and reveals major changes in policing strategy over that timeframe. This report begins with an overview of citywide trends, and then explores the data specific to Ward 7.
+
+This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. A complete index of these reports for each Ward is available at https://tinyurl.com/3xxzw4pp. Taylor can be reached at taylor.terry@gmail.com.
+
+### Citywide Overview
+
+In 2024 there were 19,263 adult arrests citywide, a +27% change from 2023 and a +30% change from the 2021-2023 average. This represents a substantial increase in arrests per sworn officer, which fell sharply after 2020 from an average of 7.7 arrests per officer per year in 2016-2019 to 4.3 in 2021-2023.
+
+### Ward 7 Overview
 In 2024 there were 4,017 adult arrests in Ward 7, a +44% change from 2023 (citywide: +27%) and a +35% change from the 2021-2023 average (citywide: +30%). The second half of 2024 saw 2,305 arrests, compared to 1,712 in the first half.
 
 ### Top Arrest Categories in 2024
@@ -48,8 +58,8 @@ The following table compares arrest counts between the first half (H1) and secon
 | Offenses Against Family & Children | 34 | 38 | +12% | -16% |
 | Narcotics | 92 | 100 | +9% | +15% |
 | Property Crimes | 58 | 59 | +2% | -10% |
+| Prostitution | 0 | 0 | 0% | +86% |
 | Aggravated Assault | 14 | 14 | 0% | -7% |
-| Sex Abuse | 2 | 2 | 0% | -48% |
 
 ### Monthly Trends
 The line graph below shows the month-by-month pattern of total arrests in Ward 7 over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes. Note that all arrest locations are based on current ward boundaries.

@@ -47,6 +47,10 @@ reports_dir.mkdir(parents=True, exist_ok=True)
 def format_percentage(value):
     """Format a percentage value with a + sign for positive values."""
     try:
+        if value == float("inf"):
+            return "N/A"
+        if value == float("-inf"):
+            return "N/A"
         value_int = int(round(float(value)))
         if value_int > 0:
             return "+" + str(value_int) + "%"
@@ -91,6 +95,14 @@ def generate_category_table(df, changes, ward_num=None, is_citywide=False):
         table += "| Category | 2023 | 2024 | Change |\n"
         table += "|----------|------:|------:|---------:|\n"
 
+    if not changes:
+        # If no changes, add a row indicating no data
+        if ward_num:
+            table += "| No arrest data available for 2024 | - | - | - | - |\n"
+        else:
+            table += "| No arrest data available for 2024 | - | - | - |\n"
+        return table
+
     for category, count_2023, count_2024, pct_change in changes:
         if not is_citywide:
             citywide_count_2024 = len(
@@ -129,6 +141,14 @@ def generate_h1h2_table(df, changes, ward_num=None, is_citywide=False):
         table += "| Category | H1 2024 | H2 2024 | Change |\n"
         table += "|----------|---------:|---------:|---------:|\n"
 
+    if not changes:
+        # If no changes, add a row indicating no data
+        if ward_num:
+            table += "| No arrest data available for 2024 | - | - | - | - |\n"
+        else:
+            table += "| No arrest data available for 2024 | - | - | - |\n"
+        return table
+
     for category, h1_count, h2_count, pct_change in changes:
         if not is_citywide:
             citywide_h1 = len(
@@ -165,13 +185,17 @@ def calculate_category_changes(df, year_filter):
     for category in df["category"].unique():
         count_2024 = len(df[(year_filter) & (df["category"] == category)])
         count_2023 = len(df[(df["year"] == 2023) & (df["category"] == category)])
-        if count_2023 > 0 or count_2024 > 0:
-            pct_change = (
-                ((count_2024 - count_2023) / count_2023 * 100)
-                if count_2023 > 0
-                else float("inf")
-            )
-            category_changes.append((category, count_2023, count_2024, pct_change))
+        # Handle division by zero cases
+        if count_2023 == 0:
+            if count_2024 == 0:
+                pct_change = 0  # No change if both years are 0
+            else:
+                pct_change = float(
+                    "inf"
+                )  # Infinite increase if going from 0 to non-zero
+        else:
+            pct_change = (count_2024 - count_2023) / count_2023 * 100
+        category_changes.append((category, count_2023, count_2024, pct_change))
     return category_changes
 
 
@@ -185,9 +209,17 @@ def calculate_h1h2_changes(df):
         h2_count = len(
             df[(df["year"] == 2024) & (df["month"] > 6) & (df["category"] == category)]
         )
-        if h1_count > 0:
+        # Handle division by zero cases
+        if h1_count == 0:
+            if h2_count == 0:
+                pct_change = 0  # No change if both halves are 0
+            else:
+                pct_change = float(
+                    "inf"
+                )  # Infinite increase if going from 0 to non-zero
+        else:
             pct_change = (h2_count - h1_count) / h1_count * 100
-            categories_h1_h2.append((category, h1_count, h2_count, pct_change))
+        categories_h1_h2.append((category, h1_count, h2_count, pct_change))
     return categories_h1_h2
 
 
@@ -219,13 +251,18 @@ def calculate_arrest_statistics(df):
     )
 
     # Category analysis
-    stats["top_categories_2024"] = (
-        df[df["year"] == 2024]["category"].value_counts().head(10)
-    )
     stats["category_changes"] = calculate_category_changes(df, df["year"] == 2024)
 
-    # Get top 10 categories and sort by 2024 count
-    stats["top_10_categories"] = stats["top_categories_2024"].index.tolist()
+    # Get top 10 categories from 2023 if no 2024 data
+    if stats["arrests_2024"] == 0:
+        stats["top_10_categories"] = (
+            df[df["year"] == 2023]["category"].value_counts().head(10).index.tolist()
+        )
+    else:
+        stats["top_10_categories"] = (
+            df[df["year"] == 2024]["category"].value_counts().head(10).index.tolist()
+        )
+
     stats["top_10_changes"] = [
         change
         for change in stats["category_changes"]
@@ -244,22 +281,83 @@ def calculate_arrest_statistics(df):
     return stats
 
 
-def generate_ward_report(df, ward_num):
+def calculate_arrests_per_officer(df, officers_df):
+    """Calculate average arrests per officer for different time periods."""
+    stats = {}
+
+    # Calculate average arrests per officer for 2016-2019
+    arrests_2016_2019 = df[df["year"].between(2016, 2019)].groupby("year").size()
+    officers_2016_2019 = officers_df[officers_df["year"].between(2016, 2019)].set_index(
+        "year"
+    )["officers"]
+    arrests_per_officer_2016_2019 = (arrests_2016_2019 / officers_2016_2019).mean()
+
+    # Calculate average arrests per officer for 2021-2023
+    arrests_2021_2023 = df[df["year"].between(2021, 2023)].groupby("year").size()
+    officers_2021_2023 = officers_df[officers_df["year"].between(2021, 2023)].set_index(
+        "year"
+    )["officers"]
+    arrests_per_officer_2021_2023 = (arrests_2021_2023 / officers_2021_2023).mean()
+
+    return arrests_per_officer_2016_2019, arrests_per_officer_2021_2023
+
+
+def generate_ward_report(df, ward_num, officers_df):
     """Generate a report for a specific ward."""
     # Filter data for the ward and calculate statistics
     ward_df = df[df["WARD"] == ward_num]
     ward_stats = calculate_arrest_statistics(ward_df)
     citywide_stats = calculate_arrest_statistics(df)
 
+    # Calculate arrests per officer statistics
+    arrests_per_officer_2016_2019, arrests_per_officer_2021_2023 = (
+        calculate_arrests_per_officer(df, officers_df)
+    )
+
     # Generate report text
     description = "## Ward {} MPD Adult Arrest Summary, 2023-2024\n\n".format(ward_num)
-    description += "### Overview\n"
-    description += "In 2024 there were {:,} adult arrests in Ward {}, a {} change from 2023 (citywide: {}) and a {} change from the 2021-2023 average (citywide: {}). The second half of 2024 saw {:,} arrests, compared to {:,} in the first half.\n\n".format(
+
+    # Add background section
+    description += "## Background\n\n"
+    description += "MPD recently made its annual public release of Adult Arrests data, covering {:,} arrests in 2024. ".format(
+        citywide_stats["arrests_2024"]
+    )
+    description += "This data represents the first full year of data available since Chief Smith took office in November of 2023, "
+    description += "and reveals major changes in policing strategy over that timeframe. This report begins with an overview of "
+    description += (
+        "citywide trends, and then explores the data specific to Ward {}.\n\n".format(
+            ward_num
+        )
+    )
+
+    description += "This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry "
+    description += "maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. "
+    description += "A complete index of these reports for each Ward is available at "
+    description += "https://tinyurl.com/3xxzw4pp. "
+    description += "Taylor can be reached at taylor.terry@gmail.com.\n\n"
+
+    # Add citywide overview with arrests per officer stats
+    description += "### Citywide Overview\n\n"
+    description += "In 2024 there were {:,} adult arrests citywide, a {} change from 2023 and a {} change from the ".format(
+        citywide_stats["arrests_2024"],
+        format_percentage(citywide_stats["pct_change_2023"]),
+        format_percentage(citywide_stats["pct_change_avg"]),
+    )
+    description += "2021-2023 average. This represents a substantial increase in arrests per sworn officer, which fell sharply "
+    description += "after 2020 from an average of {:.1f} arrests per officer per year in 2016-2019 to {:.1f} in 2021-2023.\n\n".format(
+        arrests_per_officer_2016_2019, arrests_per_officer_2021_2023
+    )
+
+    # Continue with existing ward overview
+    description += "### Ward {} Overview\n".format(ward_num)
+    description += "In 2024 there were {:,} adult arrests in Ward {}, a {} change from 2023 (citywide: {}) and a {} change ".format(
         ward_stats["arrests_2024"],
         ward_num,
         format_percentage(ward_stats["pct_change_2023"]),
         format_percentage(citywide_stats["pct_change_2023"]),
         format_percentage(ward_stats["pct_change_avg"]),
+    )
+    description += "from the 2021-2023 average (citywide: {}). The second half of 2024 saw {:,} arrests, compared to {:,} in the first half.\n\n".format(
         format_percentage(citywide_stats["pct_change_avg"]),
         ward_stats["arrests_2024_h2"],
         ward_stats["arrests_2024_h1"],
@@ -307,10 +405,15 @@ def generate_ward_report(df, ward_num):
     return description
 
 
-def generate_citywide_report(df):
+def generate_citywide_report(df, officers_df):
     """Generate a citywide report with data from all wards."""
     # Calculate statistics
     stats = calculate_arrest_statistics(df)
+
+    # Calculate arrests per officer statistics
+    arrests_per_officer_2016_2019, arrests_per_officer_2021_2023 = (
+        calculate_arrests_per_officer(df, officers_df)
+    )
 
     # Generate report text
     description = "## DC MPD Adult Arrest Summary, 2023-2024\n\n"
@@ -474,13 +577,14 @@ def main():
     # Read and preprocess data
     print("Reading data...")
     df = pd.read_csv("data/clean/arrest_data.csv.gz", low_memory=False)
+    officers_df = pd.read_csv("data/clean/officers.csv")
     df = preprocess_data(df)
     print_data_info(df)
 
     # Generate citywide report and plots
     print("Generating citywide report...")
     generate_citywide_plots(df, reports_dir)
-    citywide_report = generate_citywide_report(df)
+    citywide_report = generate_citywide_report(df, officers_df)
     with open(reports_dir / "citywide_report.md", "w") as f:
         f.write(citywide_report)
 
@@ -489,7 +593,7 @@ def main():
     print(f"Generating reports for {ward_count} wards...")
     for ward_num in tqdm(df["WARD"].unique(), desc="Generating ward reports"):
         generate_ward_plots(df, ward_num, reports_dir)
-        ward_report = generate_ward_report(df, ward_num)
+        ward_report = generate_ward_report(df, ward_num, officers_df)
         with open(reports_dir / f"ward_{ward_num}_report.md", "w") as f:
             f.write(ward_report)
 
