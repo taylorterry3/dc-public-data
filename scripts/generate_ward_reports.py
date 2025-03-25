@@ -315,7 +315,7 @@ def generate_ward_report(df, ward_num, officers_df):
     )
 
     # Generate report text
-    description = "## Ward {} MPD Adult Arrest Summary, 2023-2024\n\n".format(ward_num)
+    description = "# Ward {} MPD Adult Arrest Summary, 2023-2024\n\n".format(ward_num)
 
     # Add background section
     description += "## Background\n\n"
@@ -333,7 +333,7 @@ def generate_ward_report(df, ward_num, officers_df):
     description += "This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry "
     description += "maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. "
     description += "A complete index of these reports for each Ward is available at "
-    description += "https://tinyurl.com/3xxzw4pp. "
+    description += "http://bit.ly/4iG0Uht. "
     description += "Taylor can be reached at taylor.terry@gmail.com.\n\n"
 
     # Add citywide overview with arrests per officer stats
@@ -363,13 +363,6 @@ def generate_ward_report(df, ward_num, officers_df):
         ward_stats["arrests_2024_h1"],
     )
 
-    # Top Categories section
-    description += "### Top Arrest Categories in 2024\n"
-    description += "The table below shows the most common types of arrests in Ward {} during 2024, compared with 2023 counts. For each category, the ward-specific and citywide percentage changes are shown to provide context.\n\n".format(
-        ward_num
-    )
-    description += generate_category_table(df, ward_stats["top_10_changes"], ward_num)
-
     # Largest Increase section
     description += "\n### Arrest Categories with Largest Increase 2023-2024\n"
     description += "This table highlights the arrest categories that saw the largest percentage increases in Ward {} from 2023 to 2024. The citywide changes are shown for comparison to help identify whether these trends are ward-specific or part of broader patterns.\n\n".format(
@@ -378,6 +371,13 @@ def generate_ward_report(df, ward_num, officers_df):
     finite_changes = [c for c in ward_stats["category_changes"] if c[3] != float("inf")]
     finite_changes.sort(key=lambda x: x[3], reverse=True)  # Sort by percentage change
     description += generate_category_table(df, finite_changes[:10], ward_num)
+
+    # Top Categories section
+    description += "### Top Arrest Categories in 2024\n"
+    description += "The table below shows the most common types of arrests in Ward {} during 2024, compared with 2023 counts. For each category, the ward-specific and citywide percentage changes are shown to provide context.\n\n".format(
+        ward_num
+    )
+    description += generate_category_table(df, ward_stats["top_10_changes"], ward_num)
 
     # H1-H2 Changes section
     description += "\n### Arrest Categories with Largest Increase H1-H2 2024\n"
@@ -388,16 +388,20 @@ def generate_ward_report(df, ward_num, officers_df):
         df, ward_stats["categories_h1_h2"][:10], ward_num
     )
 
-    # Visualizations section
-    description += "\n### Monthly Trends\n"
-    description += "The line graph below shows the month-by-month pattern of total arrests in Ward {} over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes. Note that all arrest locations are based on current ward boundaries.\n\n".format(
+    # Monthly Trends section - on its own page
+    description += "\n\\newpage\n"
+    description += "### Monthly Trends\n"
+    description += "Figure 1 below shows the month-by-month pattern of total arrests in Ward {} over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes. Note that all arrest locations are based on current ward boundaries.\n\n".format(
         ward_num
     )
     description += "![Monthly Arrest Trends](ward_{}_monthly_trends.png)\n\n".format(
         ward_num
     )
+
+    # Category Distribution section - on its own page
+    description += "\n\\newpage\n"
     description += "### Arrests by Category, 2023-2024\n"
-    description += "This chart compares the distribution of arrests across different categories between 2023 and 2024 in Ward {}. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.\n\n".format(
+    description += "Figure 2 below compares the distribution of arrests across different categories between 2023 and 2024 in Ward {}. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.\n\n".format(
         ward_num
     )
     description += "![Arrests by category](ward_{}_categories.png)\n".format(ward_num)
@@ -416,7 +420,7 @@ def generate_citywide_report(df, officers_df):
     )
 
     # Generate report text
-    description = "## DC MPD Adult Arrest Summary, 2023-2024\n\n"
+    description = "# DC MPD Adult Arrest Summary, 2023-2024\n\n"
     description += "### Overview\n"
     description += "In 2024 there were {:,} adult arrests citywide, a {} change from 2023 and a {} change from the 2021-2023 average. The second half of 2024 saw {:,} arrests, compared to {:,} in the first half.\n\n".format(
         stats["arrests_2024"],
@@ -447,12 +451,16 @@ def generate_citywide_report(df, officers_df):
         df, stats["categories_h1_h2"][:10], is_citywide=True
     )
 
-    # Visualizations section
-    description += "\n### Monthly Trends\n"
-    description += "The line graph below shows the month-by-month pattern of total arrests citywide over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes.\n\n"
+    # Monthly Trends section - on its own page
+    description += "\n\\newpage\n"
+    description += "### Monthly Trends\n"
+    description += "Figure 1 below shows the month-by-month pattern of total arrests citywide over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes.\n\n"
     description += "![Monthly Arrest Trends](citywide_monthly_trends.png)\n\n"
+
+    # Category Distribution section - on its own page
+    description += "\n\\newpage\n"
     description += "### Arrests by Category, 2023-2024\n"
-    description += "This chart compares the distribution of arrests across different categories between 2023 and 2024. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.\n\n"
+    description += "Figure 2 below compares the distribution of arrests across different categories between 2023 and 2024 citywide. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.\n\n"
     description += "![Arrests by category](citywide_categories.png)\n"
 
     return description
@@ -464,14 +472,14 @@ def create_monthly_trends_plot(df, title):
     monthly_trends = df.groupby("month_year").size()
     monthly_trends.index = pd.to_datetime(monthly_trends.index + "-01")
     monthly_trends.plot(kind="line")
-    plt.title(title, fontsize=16, pad=20)
-    plt.xlabel("Date")
-    plt.ylabel("Number of Arrests")
+    plt.xlabel("Date", fontsize=16)
+    plt.ylabel("Number of Arrests", fontsize=16)
 
     # Get unique years and create tick marks for January of each year
     years = sorted(df["date"].dt.year.unique())
     year_ticks = [pd.Timestamp(f"{year}-01-01") for year in years]
-    plt.xticks(year_ticks, years, rotation=0)
+    plt.xticks(year_ticks, years, rotation=0, fontsize=14)
+    plt.yticks(fontsize=14)
 
     # Add grid lines for better readability
     plt.grid(True, axis="x", linestyle="--", alpha=0.7)
@@ -502,10 +510,10 @@ def create_category_distribution_plot(df_2023, df_2024, title):
     plt.barh(y_pos - width / 2, categories_2023, width, label="2023")
     plt.barh(y_pos + width / 2, categories_2024, width, label="2024")
 
-    plt.yticks(y_pos, all_categories)
-    plt.xlabel("Number of Arrests")
-    plt.title(title, fontsize=16, pad=20)
-    plt.legend()
+    plt.yticks(y_pos, all_categories, fontsize=14)
+    plt.xticks(fontsize=14)
+    plt.xlabel("Number of Arrests", fontsize=16)
+    plt.legend(fontsize=20)
     plt.gca().invert_yaxis()  # Invert y-axis to show ascending alphabetical order
     plt.tight_layout()
 

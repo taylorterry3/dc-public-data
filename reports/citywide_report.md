@@ -1,4 +1,4 @@
-## DC MPD Adult Arrest Summary, 2023-2024
+# DC MPD Adult Arrest Summary, 2023-2024
 
 ### Overview
 In 2024 there were 19,263 adult arrests citywide, a +27% change from 2023 and a +30% change from the 2021-2023 average. The second half of 2024 saw 9,883 arrests, compared to 9,380 in the first half.
@@ -51,12 +51,15 @@ The following table compares arrest counts between the first half (H1) and secon
 | Assault on a Police Officer | 158 | 162 | +3% |
 | Damage to Property | 263 | 264 | 0% |
 
+\newpage
 ### Monthly Trends
-The line graph below shows the month-by-month pattern of total arrests citywide over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes.
+Figure 1 below shows the month-by-month pattern of total arrests citywide over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes.
 
 ![Monthly Arrest Trends](citywide_monthly_trends.png)
 
+
+\newpage
 ### Arrests by Category, 2023-2024
-This chart compares the distribution of arrests across different categories between 2023 and 2024. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.
+Figure 2 below compares the distribution of arrests across different categories between 2023 and 2024 citywide. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.
 
 ![Arrests by category](citywide_categories.png)
