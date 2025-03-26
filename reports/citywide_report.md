@@ -1,23 +1,15 @@
 # DC MPD Adult Arrest Summary, 2023-2024
 
+## Background
+
+MPD recently made its annual public release of adult arrest data, covering 19,263 arrests in 2024. This data represents the first full year of data available since Chief Smith took office in November of 2023, and reveals major changes in policing strategy over that timeframe. This report covers data for the entire city, and reports with the same data broken down for each Ward are available at http://bit.ly/4iG0Uht. 
+
+This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. Taylor can be reached at taylor.terry@gmail.com.
+
 ### Overview
-In 2024 there were 19,263 adult arrests citywide, a +27% change from 2023 and a +30% change from the 2021-2023 average. The second half of 2024 saw 9,883 arrests, compared to 9,380 in the first half.
 
-### Top Arrest Categories in 2024
-The table below shows the most common types of arrests citywide during 2024, compared with 2023 counts.
+In 2024 there were 19,263 adult arrests citywide, a +27% change from 2023 and a +30% change from the 2021-2023 average. This represents 5.9 arrests per sworn officer in 2024, a substantial increase from the 2021-2023 average of 4.3 arrests per officer per year but not a full return to the 2016-2019 average of 7.7. 
 
-| Category | 2023 | 2024 | Change |
-|----------|------:|------:|---------:|
-| Simple Assault | 5,002 | 4,570 | -9% |
-| Traffic Violations | 898 | 2,898 | +223% |
-| Theft | 870 | 1,738 | +100% |
-| Release Violations/Fugitive | 1,568 | 1,610 | +3% |
-| Narcotics | 529 | 1,343 | +154% |
-| Weapon Violations | 1,421 | 1,286 | -10% |
-| Other Crimes | 1,043 | 976 | -6% |
-| Liquor Law Violations | 164 | 907 | +453% |
-| Driving/Boating While Intoxicated | 606 | 604 | 0% |
-| Damage to Property | 627 | 527 | -16% |
 
 ### Arrest Categories with Largest Increase 2023-2024
 This table highlights the arrest categories that saw the largest percentage increases citywide from 2023 to 2024.
@@ -34,9 +26,24 @@ This table highlights the arrest categories that saw the largest percentage incr
 | Disorderly Conduct | 106 | 195 | +84% |
 | Motor Vehicle Theft | 31 | 50 | +61% |
 | Gambling | 5 | 7 | +40% |
+### Top Arrest Categories in 2024
+The table below shows the most common types of arrests citywide during 2024, compared with 2023 counts.
+
+| Category | 2023 | 2024 | Change |
+|----------|------:|------:|---------:|
+| Simple Assault | 5,002 | 4,570 | -9% |
+| Traffic Violations | 898 | 2,898 | +223% |
+| Theft | 870 | 1,738 | +100% |
+| Release Violations/Fugitive | 1,568 | 1,610 | +3% |
+| Narcotics | 529 | 1,343 | +154% |
+| Weapon Violations | 1,421 | 1,286 | -10% |
+| Other Crimes | 1,043 | 976 | -6% |
+| Liquor Law Violations | 164 | 907 | +453% |
+| Driving/Boating While Intoxicated | 606 | 604 | 0% |
+| Damage to Property | 627 | 527 | -16% |
 
 ### Arrest Categories with Largest Increase H1-H2 2024
-The following table compares arrest counts between the first half (H1) and second half (H2) of 2024.
+Many areas of the city and types of crimes saw substantial changes in the pattern of arrests between the first half and second half of 2024. The following table compares arrest counts between the first half (H1) and second half (H2) of 2024.
 
 | Category | H1 2024 | H2 2024 | Change |
 |----------|---------:|---------:|---------:|

@@ -299,169 +299,215 @@ def calculate_arrests_per_officer(df, officers_df):
     )["officers"]
     arrests_per_officer_2021_2023 = (arrests_2021_2023 / officers_2021_2023).mean()
 
-    return arrests_per_officer_2016_2019, arrests_per_officer_2021_2023
+    # Calculate arrests per officer for 2024
+    arrests_2024 = len(df[df["year"] == 2024])
+    officers_2024 = officers_df[officers_df["year"] == 2024]["officers"].iloc[0]
+    arrests_per_officer_2024 = arrests_2024 / officers_2024
+
+    return (
+        arrests_per_officer_2016_2019,
+        arrests_per_officer_2021_2023,
+        arrests_per_officer_2024,
+    )
+
+
+def generate_background_section(citywide_stats, is_citywide=False, ward_num=None):
+    """Generate the background section text."""
+    description = "# "
+    if is_citywide:
+        description += "DC MPD Adult Arrest Summary, 2023-2024\n\n"
+    else:
+        description += f"Ward {ward_num} MPD Adult Arrest Summary, 2023-2024\n\n"
+
+    description += "## Background\n\n"
+    description += f"MPD recently made its annual public release of adult arrest data, covering {citywide_stats['arrests_2024']:,} arrests in 2024. "
+    description += "This data represents the first full year of data available since Chief Smith took office in November of 2023, "
+
+    if is_citywide:
+        description += "and reveals major changes in policing strategy over that timeframe. This report covers data for the entire city, "
+        description += "and reports with the same data broken down for each Ward are available at http://bit.ly/4iG0Uht. \n\n"
+    else:
+        description += "and reveals major changes in policing strategy over that timeframe. This report begins with an overview of "
+        description += f"citywide trends, and then explores the data specific to Ward {ward_num}.\n\n"
+
+    description += "This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry "
+    description += "maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. "
+    if not is_citywide:
+        description += (
+            "A complete index of these reports for each Ward is available at "
+        )
+        description += "http://bit.ly/4iG0Uht. "
+    description += "Taylor can be reached at taylor.terry@gmail.com.\n\n"
+
+    return description
+
+
+def generate_overview_section(
+    stats,
+    arrests_per_officer_stats,
+    is_citywide=False,
+    ward_num=None,
+    citywide_stats=None,
+):
+    """Generate the overview section text."""
+    description = "### "
+    if is_citywide:
+        description += "Overview"
+    else:
+        # Keep the Citywide Overview section name for ward reports
+        description += "Citywide Overview"
+    description += "\n\n"
+
+    if is_citywide:
+        description += "In 2024 there were {:,} adult arrests citywide, a {} change from 2023 and a {} change from the ".format(
+            stats["arrests_2024"],
+            format_percentage(stats["pct_change_2023"]),
+            format_percentage(stats["pct_change_avg"]),
+        )
+    else:
+        description += "In 2024 there were {:,} adult arrests citywide, a {} change from 2023 and a {} change from the ".format(
+            citywide_stats["arrests_2024"],
+            format_percentage(citywide_stats["pct_change_2023"]),
+            format_percentage(citywide_stats["pct_change_avg"]),
+        )
+
+    description += "2021-2023 average. "  # Add the missing text
+
+    # Add arrests per officer stats
+    if is_citywide or ward_num == 1:  # Only show arrests per officer stats once
+        description += "This represents {:.1f} arrests per sworn officer in 2024, a substantial increase from the 2021-2023 average of {:.1f} arrests per officer per year but not a full return to the 2016-2019 average of {:.1f}. ".format(
+            arrests_per_officer_stats[2],  # 2024
+            arrests_per_officer_stats[1],  # 2021-2023
+            arrests_per_officer_stats[0],  # 2016-2019
+        )
+
+    description += "\n\n"  # Add proper spacing
+
+    # Add ward-specific stats after citywide overview
+    if not is_citywide:
+        description += "### Ward {} Overview\n\n".format(ward_num)
+        description += "In 2024 there were {:,} adult arrests in Ward {}, a {} change from 2023 (citywide: {}) and a {} change ".format(
+            stats["arrests_2024"],
+            ward_num,
+            format_percentage(stats["pct_change_2023"]),
+            format_percentage(citywide_stats["pct_change_2023"]),
+            format_percentage(stats["pct_change_avg"]),
+        )
+        description += "from the 2021-2023 average (citywide: {}). ".format(
+            format_percentage(citywide_stats["pct_change_avg"])
+        )
+        description += "The second half of 2024 saw {:,} arrests, compared to {:,} in the first half.\n\n".format(
+            stats["arrests_2024_h2"],
+            stats["arrests_2024_h1"],
+        )
+
+    return description
+
+
+def generate_category_sections(df, stats, is_citywide=False, ward_num=None):
+    """Generate the category analysis sections."""
+    description = ""
+
+    # Largest Increase section
+    description += "\n### Arrest Categories with Largest Increase 2023-2024\n"
+    if not is_citywide:
+        description += f"This table highlights the arrest categories that saw the largest percentage increases in Ward {ward_num} from 2023 to 2024. The citywide changes are shown for comparison to help identify whether these trends are ward-specific or part of broader patterns.\n\n"
+    else:
+        description += "This table highlights the arrest categories that saw the largest percentage increases citywide from 2023 to 2024.\n\n"
+
+    finite_changes = [c for c in stats["category_changes"] if c[3] != float("inf")]
+    finite_changes.sort(key=lambda x: x[3], reverse=True)  # Sort by percentage change
+    description += generate_category_table(
+        df, finite_changes[:10], ward_num if not is_citywide else None, is_citywide
+    )
+
+    # Top Categories section
+    description += "### Top Arrest Categories in 2024\n"
+    if not is_citywide:
+        description += f"The table below shows the most common types of arrests in Ward {ward_num} during 2024, compared with 2023 counts. For each category, the ward-specific and citywide percentage changes are shown to provide context.\n\n"
+    else:
+        description += "The table below shows the most common types of arrests citywide during 2024, compared with 2023 counts.\n\n"
+    description += generate_category_table(
+        df, stats["top_10_changes"], ward_num if not is_citywide else None, is_citywide
+    )
+
+    # H1-H2 Changes section
+    description += "\n### Arrest Categories with Largest Increase H1-H2 2024\n"
+    description += "Many areas of the city and types of crimes saw substantial changes in the pattern of arrests between the first half and second half of 2024. "
+    if not is_citywide:
+        description += f"The following table compares arrest counts between the first half (H1) and second half (H2) of 2024 in Ward {ward_num}. This comparison helps identify emerging trends within the year. Categories are sorted by the magnitude of change between halves.\n\n"
+    else:
+        description += "The following table compares arrest counts between the first half (H1) and second half (H2) of 2024.\n\n"
+    description += generate_h1h2_table(
+        df,
+        stats["categories_h1_h2"][:10],
+        ward_num if not is_citywide else None,
+        is_citywide,
+    )
+
+    return description
+
+
+def generate_visualization_sections(is_citywide=False, ward_num=None):
+    """Generate the visualization sections."""
+    description = ""
+
+    # Monthly Trends section
+    description += "\n\\newpage\n"
+    description += "### Monthly Trends\n"
+    if not is_citywide:
+        description += f"Figure 1 below shows the month-by-month pattern of total arrests in Ward {ward_num} over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes. Note that all arrest locations are based on current ward boundaries.\n\n"
+        description += (
+            f"![Monthly Arrest Trends](ward_{ward_num}_monthly_trends.png)\n\n"
+        )
+    else:
+        description += "Figure 1 below shows the month-by-month pattern of total arrests citywide over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes.\n\n"
+        description += "![Monthly Arrest Trends](citywide_monthly_trends.png)\n\n"
+
+    # Category Distribution section
+    description += "\n\\newpage\n"
+    description += "### Arrests by Category, 2023-2024\n"
+    if not is_citywide:
+        description += f"Figure 2 below compares the distribution of arrests across different categories between 2023 and 2024 in Ward {ward_num}. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.\n\n"
+        description += f"![Arrests by category](ward_{ward_num}_categories.png)\n"
+    else:
+        description += "Figure 2 below compares the distribution of arrests across different categories between 2023 and 2024 citywide. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.\n\n"
+        description += "![Arrests by category](citywide_categories.png)\n"
+
+    return description
 
 
 def generate_ward_report(df, ward_num, officers_df):
     """Generate a report for a specific ward."""
-    # Filter data for the ward and calculate statistics
     ward_df = df[df["WARD"] == ward_num]
     ward_stats = calculate_arrest_statistics(ward_df)
     citywide_stats = calculate_arrest_statistics(df)
+    arrests_per_officer_stats = calculate_arrests_per_officer(df, officers_df)
 
-    # Calculate arrests per officer statistics
-    arrests_per_officer_2016_2019, arrests_per_officer_2021_2023 = (
-        calculate_arrests_per_officer(df, officers_df)
+    description = generate_background_section(citywide_stats, ward_num=ward_num)
+    description += generate_overview_section(
+        ward_stats,
+        arrests_per_officer_stats,
+        ward_num=ward_num,
+        citywide_stats=citywide_stats,
     )
-
-    # Generate report text
-    description = "# Ward {} MPD Adult Arrest Summary, 2023-2024\n\n".format(ward_num)
-
-    # Add background section
-    description += "## Background\n\n"
-    description += "MPD recently made its annual public release of Adult Arrests data, covering {:,} arrests in 2024. ".format(
-        citywide_stats["arrests_2024"]
-    )
-    description += "This data represents the first full year of data available since Chief Smith took office in November of 2023, "
-    description += "and reveals major changes in policing strategy over that timeframe. This report begins with an overview of "
-    description += (
-        "citywide trends, and then explores the data specific to Ward {}.\n\n".format(
-            ward_num
-        )
-    )
-
-    description += "This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry "
-    description += "maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. "
-    description += "A complete index of these reports for each Ward is available at "
-    description += "http://bit.ly/4iG0Uht. "
-    description += "Taylor can be reached at taylor.terry@gmail.com.\n\n"
-
-    # Add citywide overview with arrests per officer stats
-    description += "### Citywide Overview\n\n"
-    description += "In 2024 there were {:,} adult arrests citywide, a {} change from 2023 and a {} change from the ".format(
-        citywide_stats["arrests_2024"],
-        format_percentage(citywide_stats["pct_change_2023"]),
-        format_percentage(citywide_stats["pct_change_avg"]),
-    )
-    description += "2021-2023 average. This represents a substantial increase in arrests per sworn officer, which fell sharply "
-    description += "after 2020 from an average of {:.1f} arrests per officer per year in 2016-2019 to {:.1f} in 2021-2023.\n\n".format(
-        arrests_per_officer_2016_2019, arrests_per_officer_2021_2023
-    )
-
-    # Continue with existing ward overview
-    description += "### Ward {} Overview\n".format(ward_num)
-    description += "In 2024 there were {:,} adult arrests in Ward {}, a {} change from 2023 (citywide: {}) and a {} change ".format(
-        ward_stats["arrests_2024"],
-        ward_num,
-        format_percentage(ward_stats["pct_change_2023"]),
-        format_percentage(citywide_stats["pct_change_2023"]),
-        format_percentage(ward_stats["pct_change_avg"]),
-    )
-    description += "from the 2021-2023 average (citywide: {}). The second half of 2024 saw {:,} arrests, compared to {:,} in the first half.\n\n".format(
-        format_percentage(citywide_stats["pct_change_avg"]),
-        ward_stats["arrests_2024_h2"],
-        ward_stats["arrests_2024_h1"],
-    )
-
-    # Largest Increase section
-    description += "\n### Arrest Categories with Largest Increase 2023-2024\n"
-    description += "This table highlights the arrest categories that saw the largest percentage increases in Ward {} from 2023 to 2024. The citywide changes are shown for comparison to help identify whether these trends are ward-specific or part of broader patterns.\n\n".format(
-        ward_num
-    )
-    finite_changes = [c for c in ward_stats["category_changes"] if c[3] != float("inf")]
-    finite_changes.sort(key=lambda x: x[3], reverse=True)  # Sort by percentage change
-    description += generate_category_table(df, finite_changes[:10], ward_num)
-
-    # Top Categories section
-    description += "### Top Arrest Categories in 2024\n"
-    description += "The table below shows the most common types of arrests in Ward {} during 2024, compared with 2023 counts. For each category, the ward-specific and citywide percentage changes are shown to provide context.\n\n".format(
-        ward_num
-    )
-    description += generate_category_table(df, ward_stats["top_10_changes"], ward_num)
-
-    # H1-H2 Changes section
-    description += "\n### Arrest Categories with Largest Increase H1-H2 2024\n"
-    description += "The following table compares arrest counts between the first half (H1) and second half (H2) of 2024 in Ward {}. This comparison helps identify emerging trends within the year. Categories are sorted by the magnitude of change between halves.\n\n".format(
-        ward_num
-    )
-    description += generate_h1h2_table(
-        df, ward_stats["categories_h1_h2"][:10], ward_num
-    )
-
-    # Monthly Trends section - on its own page
-    description += "\n\\newpage\n"
-    description += "### Monthly Trends\n"
-    description += "Figure 1 below shows the month-by-month pattern of total arrests in Ward {} over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes. Note that all arrest locations are based on current ward boundaries.\n\n".format(
-        ward_num
-    )
-    description += "![Monthly Arrest Trends](ward_{}_monthly_trends.png)\n\n".format(
-        ward_num
-    )
-
-    # Category Distribution section - on its own page
-    description += "\n\\newpage\n"
-    description += "### Arrests by Category, 2023-2024\n"
-    description += "Figure 2 below compares the distribution of arrests across different categories between 2023 and 2024 in Ward {}. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.\n\n".format(
-        ward_num
-    )
-    description += "![Arrests by category](ward_{}_categories.png)\n".format(ward_num)
+    description += generate_category_sections(df, ward_stats, ward_num=ward_num)
+    description += generate_visualization_sections(ward_num=ward_num)
 
     return description
 
 
 def generate_citywide_report(df, officers_df):
     """Generate a citywide report with data from all wards."""
-    # Calculate statistics
     stats = calculate_arrest_statistics(df)
+    arrests_per_officer_stats = calculate_arrests_per_officer(df, officers_df)
 
-    # Calculate arrests per officer statistics
-    arrests_per_officer_2016_2019, arrests_per_officer_2021_2023 = (
-        calculate_arrests_per_officer(df, officers_df)
+    description = generate_background_section(stats, is_citywide=True)
+    description += generate_overview_section(
+        stats, arrests_per_officer_stats, is_citywide=True
     )
-
-    # Generate report text
-    description = "# DC MPD Adult Arrest Summary, 2023-2024\n\n"
-    description += "### Overview\n"
-    description += "In 2024 there were {:,} adult arrests citywide, a {} change from 2023 and a {} change from the 2021-2023 average. The second half of 2024 saw {:,} arrests, compared to {:,} in the first half.\n\n".format(
-        stats["arrests_2024"],
-        format_percentage(stats["pct_change_2023"]),
-        format_percentage(stats["pct_change_avg"]),
-        stats["arrests_2024_h2"],
-        stats["arrests_2024_h1"],
-    )
-
-    # Top Categories section
-    description += "### Top Arrest Categories in 2024\n"
-    description += "The table below shows the most common types of arrests citywide during 2024, compared with 2023 counts.\n\n"
-    description += generate_category_table(
-        df, stats["top_10_changes"], is_citywide=True
-    )
-
-    # Largest Increase section
-    description += "\n### Arrest Categories with Largest Increase 2023-2024\n"
-    description += "This table highlights the arrest categories that saw the largest percentage increases citywide from 2023 to 2024.\n\n"
-    finite_changes = [c for c in stats["category_changes"] if c[3] != float("inf")]
-    finite_changes.sort(key=lambda x: x[3], reverse=True)  # Sort by percentage change
-    description += generate_category_table(df, finite_changes[:10], is_citywide=True)
-
-    # H1-H2 Changes section
-    description += "\n### Arrest Categories with Largest Increase H1-H2 2024\n"
-    description += "The following table compares arrest counts between the first half (H1) and second half (H2) of 2024.\n\n"
-    description += generate_h1h2_table(
-        df, stats["categories_h1_h2"][:10], is_citywide=True
-    )
-
-    # Monthly Trends section - on its own page
-    description += "\n\\newpage\n"
-    description += "### Monthly Trends\n"
-    description += "Figure 1 below shows the month-by-month pattern of total arrests citywide over time. This visualization helps identify seasonal patterns and longer-term trends in arrest volumes.\n\n"
-    description += "![Monthly Arrest Trends](citywide_monthly_trends.png)\n\n"
-
-    # Category Distribution section - on its own page
-    description += "\n\\newpage\n"
-    description += "### Arrests by Category, 2023-2024\n"
-    description += "Figure 2 below compares the distribution of arrests across different categories between 2023 and 2024 citywide. The side-by-side bars allow for easy comparison of how the composition of arrests has changed year over year.\n\n"
-    description += "![Arrests by category](citywide_categories.png)\n"
+    description += generate_category_sections(df, stats, is_citywide=True)
+    description += generate_visualization_sections(is_citywide=True)
 
     return description
 
