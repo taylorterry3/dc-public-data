@@ -3,7 +3,12 @@ import re
 from datetime import datetime
 import pandas as pd
 from pathlib import Path
-from scripts.generate_ward_reports import generate_ward_report, main
+from scripts.generate_ward_reports import (
+    generate_ward_report,
+    generate_citywide_report,
+    preprocess_data,
+    main,
+)
 import numpy as np
 
 
@@ -19,22 +24,21 @@ def test_all_ward_reports_exist(reports_dir):
         assert report_path.exists(), f"Missing report for Ward {ward}"
 
 
-def test_report_sections(tmp_path, arrest_data, officers_data):
+def test_report_sections(test_data, test_officers_data):
     """Test that all required sections are present in reports."""
-    ward_num = 1
-    expected_sections = [
+    report = generate_ward_report(test_data, 1, test_officers_data)
+
+    required_sections = [
         "Background",
-        "Citywide Overview",
-        f"Ward {ward_num} Overview",  # Changed to match actual report format
-        "Top Arrest Categories in 2024",
+        "Citywide Changes in Arrest Patterns",
+        "Ward 1 Overview",
+        "Productivity per Officer",
         "Arrest Categories with Largest Increase 2023-2024",
-        "Arrest Categories with Largest Increase H1-H2 2024",
+        "Top Arrest Categories in 2024",
+        "Arrests by Category, 2023-2024",
     ]
 
-    # Generate report
-    report = generate_ward_report(arrest_data, ward_num, officers_data)
-
-    for section in expected_sections:
+    for section in required_sections:
         assert section in report, f"Missing section '{section}' in report"
 
 
@@ -185,3 +189,29 @@ def test_main_generates_all_reports(tmp_path, monkeypatch):
     for ward in range(1, 9):
         ward_report = reports_dir / f"ward_{ward}_report.md"
         assert ward_report.exists()
+
+
+@pytest.fixture
+def test_data():
+    """Create test data fixture."""
+    dates = pd.date_range(start="2023-01-01", end="2024-12-31", freq="D")
+    n_records = len(dates) * 2
+
+    data = {
+        "date": np.repeat(dates, 2),
+        "category": np.random.choice(
+            ["Theft", "Narcotics", "Traffic Violations"], n_records
+        ),
+        "WARD": np.random.randint(1, 9, n_records),
+    }
+
+    df = pd.DataFrame(data)
+    return preprocess_data(df)
+
+
+@pytest.fixture
+def test_officers_data():
+    """Create test officers data fixture."""
+    return pd.DataFrame(
+        {"year": [2021, 2022, 2023, 2024], "officers": [3500, 3400, 3300, 3200]}
+    )

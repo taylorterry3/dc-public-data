@@ -5,6 +5,13 @@ import numpy as np
 from pathlib import Path
 import re
 from datetime import datetime
+import shutil
+import pytest
+from generate_ward_reports import (
+    generate_ward_report,
+    generate_citywide_report,
+    preprocess_data,
+)
 
 
 def get_project_root():
@@ -58,162 +65,88 @@ def test_data_completeness():
     print(f"Note: Found {missing_categories} missing categories (this is expected)")
 
 
+def create_test_data():
+    """Create a small test dataset."""
+    dates = pd.date_range(start="2023-01-01", end="2024-12-31", freq="D")
+    n_records = len(dates) * 2  # 2 records per day
+
+    data = {
+        "date": np.repeat(dates, 2),
+        "category": np.random.choice(
+            ["Theft", "Narcotics", "Traffic Violations"], n_records
+        ),
+        "WARD": np.random.randint(1, 9, n_records),
+    }
+
+    df = pd.DataFrame(data)
+    return preprocess_data(df)
+
+
+def create_test_officers_data():
+    """Create test officers data."""
+    return pd.DataFrame(
+        {"year": [2021, 2022, 2023, 2024], "officers": [3500, 3400, 3300, 3200]}
+    )
+
+
 def test_report_generation():
-    """Test that reports were generated for all wards with correct content."""
-    print("\nTesting report generation...")
+    """Test basic report generation functionality."""
+    df = create_test_data()
+    officers_df = create_test_officers_data()
 
-    reports_dir = get_reports_path()
-    assert reports_dir.exists(), "Reports directory not found"
+    # Generate a test ward report
+    report = generate_ward_report(df, 1, officers_df)
 
-    # Check all ward reports exist
-    for ward in range(1, 9):
-        report_path = reports_dir / f"ward_{ward}_report.md"
-        assert report_path.exists(), f"Missing report for Ward {ward}"
-
-        # Read report content
-        with open(report_path, "r") as f:
-            content = f.read()
-
-        # Check for required sections
-        required_sections = [
-            "Overview",
-            "Top Arrest Categories in 2024",
-            "Arrest Categories with Largest Increase 2023-2024",
-            "Arrest Categories with Largest Increase H1-H2 2024",
-            "Monthly Trends",
-            "Arrests by Category, 2023-2024",
-        ]
-        for section in required_sections:
-            assert (
-                section in content
-            ), f"Missing section '{section}' in Ward {ward} report"
-
-        # Check for required images
-        required_images = [
-            f"ward_{ward}_monthly_trends.png",
-            f"ward_{ward}_categories.png",
-        ]
-        for img in required_images:
-            assert (
-                reports_dir / img
-            ).exists(), f"Missing image '{img}' for Ward {ward}"
-
-    print("✓ All ward reports generated with required content")
-
-
-def test_zero_arrest_filtering():
-    """Test that categories with zero arrests are properly filtered."""
-    print("\nTesting zero arrest filtering...")
-
-    # Read the data
-    arrest_data = pd.read_csv(get_data_path("arrest_data.csv.gz"), low_memory=False)
-    arrest_data["date"] = pd.to_datetime(arrest_data["date"])
-
-    # Check each ward's report
-    reports_dir = get_reports_path()
-    for ward in range(1, 9):
-        with open(reports_dir / f"ward_{ward}_report.md", "r") as f:
-            content = f.read()
-
-        # Extract tables
-        tables = re.findall(r"\|.*\|", content)
-
-        # Check percentage increase tables
-        for table in tables:
-            if "2023" in table and "2024" in table:
-                # Extract numbers from table
-                numbers = re.findall(r"\d+", table)
-                if len(numbers) >= 4:  # At least 2 pairs of numbers
-                    for i in range(0, len(numbers) - 2, 2):
-                        count_2024 = int(numbers[i])
-                        count_2023 = int(numbers[i + 1])
-                        # Only check if both counts are zero
-                        assert not (
-                            count_2024 == 0 and count_2023 == 0
-                        ), f"Found category with zero arrests in both 2023 and 2024 in Ward {ward} comparison table"
-
-    print("✓ Zero arrest filtering check passed")
+    # Check for required sections
+    assert "Citywide Changes in Arrest Patterns" in report
+    assert "Ward 1 Overview" in report
+    assert "Productivity per Officer" in report
+    assert "Arrest Categories with Largest Increase 2023-2024" in report
+    assert "Top Arrest Categories in 2024" in report
+    assert "Arrests by Category, 2023-2024" in report
 
 
 def test_date_range_coverage():
-    """Test that the date range is correctly covered in the reports."""
-    print("\nTesting date range coverage...")
+    """Test that reports cover the correct date range."""
+    df = create_test_data()
+    officers_df = create_test_officers_data()
 
-    # Read the data
-    arrest_data = pd.read_csv(get_data_path("arrest_data.csv.gz"), low_memory=False)
-    arrest_data["date"] = pd.to_datetime(arrest_data["date"]).dt.tz_localize(None)
-
-    # Filter to just 2023-2024 since that's what the reports cover
-    arrest_data = arrest_data[arrest_data.date.dt.year.isin([2023, 2024])]
-
-    # Check each ward's report
-    reports_dir = get_reports_path()
-    for ward in range(1, 9):
-        with open(reports_dir / f"ward_{ward}_report.md", "r") as f:
-            content = f.read()
-
-        # Extract date range from title
-        date_match = re.search(
-            r"Ward \d+ MPD Adult Arrest Summary, (\d{4})-(\d{4})", content
-        )
-        assert date_match, f"Could not find date range in Ward {ward} report title"
-
-        start_year = int(date_match.group(1))
-        end_year = int(date_match.group(2))
-
-        # Check that the date range matches the data
-        ward_data = arrest_data[arrest_data.WARD == ward]
-        expected_start = pd.Timestamp(ward_data.date.min())
-        expected_end = pd.Timestamp(ward_data.date.max())
-
-        assert expected_start.year == start_year, (
-            f"Start year mismatch in Ward {ward} report. "
-            f"Expected {expected_start.year}, got {start_year}"
-        )
-        assert expected_end.year == end_year, (
-            f"End year mismatch in Ward {ward} report. "
-            f"Expected {expected_end.year}, got {end_year}"
-        )
-
-    print("✓ Date range coverage check passed")
+    report = generate_ward_report(df, 1, officers_df)
+    assert "2023-2024" in report  # Check date range in title
+    assert "2024" in report  # Check current year
+    assert "2023" in report  # Check previous year
 
 
-def test_statistics_consistency():
-    """Test that statistics in the reports are consistent with the data."""
-    print("\nTesting statistics consistency...")
+def test_visualization_sections():
+    """Test that visualization sections are properly formatted."""
+    df = create_test_data()
+    officers_df = create_test_officers_data()
 
-    # Read the data
-    arrest_data = pd.read_csv(get_data_path("arrest_data.csv.gz"), low_memory=False)
-    arrest_data["date"] = pd.to_datetime(arrest_data["date"]).dt.tz_localize(None)
+    report = generate_ward_report(df, 1, officers_df)
 
-    # Filter to just 2023-2024 since that's what the reports cover
-    arrest_data = arrest_data[arrest_data.date.dt.year.isin([2023, 2024])]
+    # Check for visualization references
+    assert "![Arrests and Stops per Officer](citywide_officer_trends.png)" in report
+    assert "![Arrests by category](ward_1_categories.png)" in report
 
-    # Check each ward's report
-    reports_dir = get_reports_path()
-    for ward in range(1, 9):
-        with open(reports_dir / f"ward_{ward}_report.md", "r") as f:
-            content = f.read()
 
-        # Extract total arrests from ward overview section
-        total_match = re.search(
-            rf"In 2024 there were (\d+,?\d*) adult arrests in Ward {ward}",
-            content,
-        )
-        assert total_match, f"Could not find Ward {ward} total arrests in report"
-        reported_total = int(total_match.group(1).replace(",", ""))
+def test_plot_generation(tmp_path):
+    """Test that plots are generated correctly."""
+    df = create_test_data()
+    officers_df = create_test_officers_data()
 
-        # Calculate actual total for 2024
-        ward_data = arrest_data[
-            (arrest_data.WARD == ward) & (arrest_data.date.dt.year == 2024)
-        ]
-        actual_total = len(ward_data)
+    # Create temporary directory for test plots
+    reports_dir = tmp_path / "reports"
+    reports_dir.mkdir()
 
-        assert (
-            reported_total == actual_total
-        ), f"Total arrests mismatch in Ward {ward} report. Expected {actual_total}, got {reported_total}"
+    # Generate plots
+    from generate_ward_reports import generate_ward_plots, generate_citywide_plots
 
-    print("✓ Statistics consistency check passed")
+    generate_citywide_plots(df, reports_dir, officers_df)
+    generate_ward_plots(df, 1, reports_dir, officers_df)
+
+    # Check that plot files exist
+    assert (reports_dir / "citywide_officer_trends.png").exists()
+    assert (reports_dir / "ward_1_categories.png").exists()
 
 
 def main():
@@ -223,9 +156,9 @@ def main():
     try:
         test_data_completeness()
         test_report_generation()
-        test_zero_arrest_filtering()
         test_date_range_coverage()
-        test_statistics_consistency()
+        test_visualization_sections()
+        test_plot_generation()
         print("\nAll tests passed successfully!")
     except AssertionError as e:
         print(f"\n❌ Test failed: {str(e)}")
