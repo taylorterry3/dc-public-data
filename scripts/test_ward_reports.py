@@ -8,8 +8,7 @@ from datetime import datetime
 import shutil
 import pytest
 from generate_ward_reports import (
-    generate_ward_report,
-    generate_citywide_report,
+    generate_report,
     preprocess_data,
 )
 
@@ -76,6 +75,9 @@ def create_test_data():
             ["Theft", "Narcotics", "Traffic Violations"], n_records
         ),
         "WARD": np.random.randint(1, 9, n_records),
+        "ARREST_DISTRICT": np.random.choice(
+            ["1D", "2D", "3D", "4D", "5D", "6D", "7D"], n_records
+        ),
     }
 
     df = pd.DataFrame(data)
@@ -89,44 +91,46 @@ def create_test_officers_data():
     )
 
 
-def test_report_generation():
-    """Test basic report generation functionality."""
+def test_report_sections():
+    """Test that all required sections are present in the report."""
     df = create_test_data()
     officers_df = create_test_officers_data()
 
-    # Generate a test ward report
-    report = generate_ward_report(df, 1, officers_df)
+    report = generate_report(df, officers_df)
 
-    # Check for required sections
-    assert "Citywide Changes in Arrest Patterns" in report
-    assert "Ward 1 Overview" in report
-    assert "Productivity per Officer" in report
-    assert "Arrest Categories with Largest Increase 2023-2024" in report
-    assert "Top Arrest Categories in 2024" in report
-    assert "Arrests by Category, 2023-2024" in report
+    # Check main sections
+    required_sections = [
+        "DC Metropolitan Police Department Adult Arrest Trends, 2023-2024",
+        "Background",
+        "Citywide Changes in Arrest Patterns",
+        "Productivity per Officer",
+        "Arrests by Category",
+        "Appendix 1: Data by Ward",
+        "Appendix 2: Data by Police District",
+    ]
+
+    for section in required_sections:
+        assert section in report, f"Missing section: {section}"
 
 
-def test_date_range_coverage():
-    """Test that reports cover the correct date range."""
+def test_appendix_contents():
+    """Test that ward and district appendices contain required elements."""
     df = create_test_data()
     officers_df = create_test_officers_data()
 
-    report = generate_ward_report(df, 1, officers_df)
-    assert "2023-2024" in report  # Check date range in title
-    assert "2024" in report  # Check current year
-    assert "2023" in report  # Check previous year
+    report = generate_report(df, officers_df)
 
+    # Check ward appendix
+    for ward in range(1, 9):
+        assert f"## Ward {ward}" in report
+        assert "| Arrest Category | 2023 | 2024 | Change | % Change |" in report
+        assert f"![](ward_{ward}_categories.png)" in report
 
-def test_visualization_sections():
-    """Test that visualization sections are properly formatted."""
-    df = create_test_data()
-    officers_df = create_test_officers_data()
-
-    report = generate_ward_report(df, 1, officers_df)
-
-    # Check for visualization references
-    assert "![Arrests and Stops per Officer](citywide_officer_trends.png)" in report
-    assert "![Arrests by category](ward_1_categories.png)" in report
+    # Check district appendix
+    for district in ["1D", "2D", "3D", "4D", "5D", "6D", "7D"]:
+        assert f"## {district}" in report
+        assert "| Arrest Category | 2023 | 2024 | Change | % Change |" in report
+        assert f"![](district_{district}_categories.png)" in report
 
 
 def test_plot_generation(tmp_path):
@@ -139,14 +143,38 @@ def test_plot_generation(tmp_path):
     reports_dir.mkdir()
 
     # Generate plots
-    from generate_ward_reports import generate_ward_plots, generate_citywide_plots
+    from generate_ward_reports import (
+        generate_citywide_plots,
+        generate_ward_plots,
+        generate_district_plots,
+    )
 
+    # Generate citywide plots
     generate_citywide_plots(df, reports_dir, officers_df)
-    generate_ward_plots(df, 1, reports_dir, officers_df)
-
-    # Check that plot files exist
+    assert (reports_dir / "citywide_categories.png").exists()
     assert (reports_dir / "citywide_officer_trends.png").exists()
-    assert (reports_dir / "ward_1_categories.png").exists()
+
+    # Generate ward plots
+    for ward in range(1, 9):
+        generate_ward_plots(df, ward, reports_dir, officers_df)
+        assert (reports_dir / f"ward_{ward}_categories.png").exists()
+
+    # Generate district plots
+    for district in ["1D", "2D", "3D", "4D", "5D", "6D", "7D"]:
+        generate_district_plots(df, district, reports_dir, officers_df)
+        assert (reports_dir / f"district_{district}_categories.png").exists()
+
+
+def test_data_preprocessing():
+    """Test that data preprocessing works correctly."""
+    df = create_test_data()
+
+    assert "year" in df.columns
+    assert "month" in df.columns
+    assert "month_year" in df.columns
+    assert df["WARD"].min() > 0
+    assert not df["WARD"].isna().any()
+    assert not df["ARREST_DISTRICT"].isna().any()
 
 
 def main():
@@ -155,10 +183,10 @@ def main():
 
     try:
         test_data_completeness()
-        test_report_generation()
-        test_date_range_coverage()
-        test_visualization_sections()
+        test_report_sections()
+        test_appendix_contents()
         test_plot_generation()
+        test_data_preprocessing()
         print("\nAll tests passed successfully!")
     except AssertionError as e:
         print(f"\n❌ Test failed: {str(e)}")
