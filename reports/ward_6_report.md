@@ -6,6 +6,7 @@ MPD recently made its annual public release of adult arrest data, covering 19,26
 
 This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. A complete index of these reports for each Ward is available at http://bit.ly/4iG0Uht. Taylor can be reached at taylor.terry@gmail.com.
 
+
 ### Citywide Changes in Arrest Patterns
 
 In 2024 there were 19,263 adult arrests citywide, a +27% change from 15,223 arrests in 2023 and a +30% change from the 2021-2023 average of 14,861. The increase in arrests was concentrated in Wards 1, 7, and 8. These wards each saw more than 1,000 additional arrests, while the next biggest gain was 212 additional arrests in Ward 5.
@@ -54,6 +55,7 @@ MPD reported having 3,282 sworn officers in 2024, meaning that 19,263 arrests re
 In 2024 there were 1,723 adult arrests in Ward 6, a +9% change from 2023 (citywide: +27%) and a +16% change from the 2021-2023 average (citywide: +30%). The second half of 2024 saw 872 arrests, compared to 851 in the first half.
 
 
+
 \newpage
 ### Arrest Categories with Largest Increase 2023-2024
 This table highlights the arrest categories that saw the largest percentage increases in Ward 6 from 2023 to 2024. The citywide changes are shown for comparison to help identify whether these trends are ward-specific or part of broader patterns.
@@ -88,22 +90,24 @@ The table below shows the most common types of arrests in Ward 6 during 2024, co
 | Property Crimes | 50 | 50 | 0% | 0% |
 | All Other Categories | 281 | 305 | +9% | +45% |
 
+\newpage
 ### Arrest Categories with Largest Increase H1-H2 2024
 Many areas of the city and types of crimes saw substantial changes in the pattern of arrests between the first half and second half of 2024. The following table compares arrest counts between the first half (H1) and second half (H2) of 2024 in Ward 6. This comparison helps identify emerging trends within the year. Categories are sorted by the magnitude of change between halves.
 
 | Category | H1 2024 | H2 2024 | Ward 6 Change | Citywide Change |
 |----------|---------:|---------:|---------:|----------------:|
 | Theft from Auto | 0 | 2 | N/A | -24% |
+| Prostitution | 0 | 0 | N/A | +86% |
+| Vending Violations | 0 | 0 | N/A | 0% |
+| Gambling | 0 | 0 | N/A | +33% |
+| nan | 0 | 0 | N/A | 0% |
 | Motor Vehicle Theft | 1 | 4 | +300% | +38% |
 | Burglary | 5 | 14 | +180% | +31% |
 | Liquor Law Violations | 13 | 23 | +77% | +23% |
 | Homicide | 12 | 21 | +75% | -7% |
 | Other Crimes | 37 | 60 | +62% | 0% |
-| Damage to Property | 21 | 31 | +48% | 0% |
-| Traffic Violations | 78 | 107 | +37% | +55% |
-| Narcotics | 61 | 71 | +16% | +15% |
-| Robbery | 13 | 14 | +8% | -3% |
-| All Other Categories | 610 | 525 | -14% | -5% |
+| All Other Categories | 783 | 748 | -4% | +5% |
+
 
 \newpage
 ### Arrests by Category, 2023-2024

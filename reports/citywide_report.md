@@ -6,6 +6,7 @@ MPD recently made its annual public release of adult arrest data, covering 19,26
 
 This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. Taylor can be reached at taylor.terry@gmail.com.
 
+
 ### Citywide Changes in Arrest Patterns
 
 In 2024 there were 19,263 adult arrests citywide, a +27% change from 15,223 arrests in 2023 and a +30% change from the 2021-2023 average of 14,861. The increase in arrests was concentrated in Wards 1, 7, and 8. These wards each saw more than 1,000 additional arrests, while the next biggest gain was 212 additional arrests in Ward 5.
@@ -50,6 +51,7 @@ MPD reported having 3,282 sworn officers in 2024, meaning that 19,263 arrests re
 ![Arrests and Stops per Officer](citywide_officer_trends.png)
 
 
+
 \newpage
 ### Arrest Categories with Largest Increase 2023-2024
 This table highlights the arrest categories that saw the largest percentage increases citywide from 2023 to 2024.
@@ -84,11 +86,14 @@ The table below shows the most common types of arrests citywide during 2024, com
 | Damage to Property | 627 | 527 | -16% |
 | All Other Categories | 2,495 | 2,804 | +12% |
 
+\newpage
 ### Arrest Categories with Largest Increase H1-H2 2024
 Many areas of the city and types of crimes saw substantial changes in the pattern of arrests between the first half and second half of 2024. The following table compares arrest counts between the first half (H1) and second half (H2) of 2024.
 
 | Category | H1 2024 | H2 2024 | Change |
 |----------|---------:|---------:|---------:|
+| Vending Violations | 0 | 0 | N/A |
+| nan | 0 | 0 | N/A |
 | Prostitution | 7 | 13 | +86% |
 | Traffic Violations | 1,137 | 1,761 | +55% |
 | Motor Vehicle Theft | 21 | 29 | +38% |
@@ -97,9 +102,8 @@ Many areas of the city and types of crimes saw substantial changes in the patter
 | Liquor Law Violations | 407 | 500 | +23% |
 | Narcotics | 625 | 718 | +15% |
 | Theft | 849 | 889 | +5% |
-| Assault on a Police Officer | 158 | 162 | +3% |
-| Damage to Property | 263 | 264 | 0% |
-| All Other Categories | 5,846 | 5,459 | -7% |
+| All Other Categories | 6,267 | 5,885 | -6% |
+
 
 \newpage
 ### Arrests by Category, 2023-2024

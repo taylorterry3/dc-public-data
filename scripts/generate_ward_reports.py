@@ -114,12 +114,19 @@ def generate_category_table(df, changes, ward_num=None, is_citywide=False):
         return table
 
     # Get all categories and their changes
-    all_categories = set(cat[0] for cat in changes)
-    shown_categories = set(cat[0] for cat in changes[:10])  # First 10 categories
+    all_categories = set(cat["category"] for cat in changes)
+    shown_categories = set(
+        cat["category"] for cat in changes[:10]
+    )  # First 10 categories
     other_categories = all_categories - shown_categories
 
     # Add the top 10 rows
-    for category, count_2023, count_2024, pct_change in changes[:10]:
+    for category_data in changes[:10]:
+        category = category_data["category"]
+        count_2023 = category_data["count1"]
+        count_2024 = category_data["count2"]
+        pct_change = category_data["pct_change"]
+
         if not is_citywide:
             citywide_count_2024 = len(
                 df[(df["year"] == 2024) & (df["category"] == category)]
@@ -145,10 +152,10 @@ def generate_category_table(df, changes, ward_num=None, is_citywide=False):
     # Calculate totals for other categories
     if other_categories:
         other_2023 = sum(
-            count_2023 for cat, count_2023, _, _ in changes if cat in other_categories
+            cat["count1"] for cat in changes if cat["category"] in other_categories
         )
         other_2024 = sum(
-            count_2024 for cat, _, count_2024, _ in changes if cat in other_categories
+            cat["count2"] for cat in changes if cat["category"] in other_categories
         )
         other_change = other_2024 - other_2023
         other_pct_change = (
@@ -207,12 +214,19 @@ def generate_h1h2_table(df, changes, ward_num=None, is_citywide=False):
         return table
 
     # Get all categories and their changes
-    all_categories = set(cat[0] for cat in changes)
-    shown_categories = set(cat[0] for cat in changes[:10])  # First 10 categories
+    all_categories = set(cat["category"] for cat in changes)
+    shown_categories = set(
+        cat["category"] for cat in changes[:10]
+    )  # First 10 categories
     other_categories = all_categories - shown_categories
 
     # Add the top 10 rows
-    for category, h1_count, h2_count, pct_change in changes[:10]:
+    for category_data in changes[:10]:
+        category = category_data["category"]
+        h1_count = category_data["count1"]
+        h2_count = category_data["count2"]
+        pct_change = category_data["pct_change"]
+
         if not is_citywide:
             citywide_h1 = len(
                 df[
@@ -242,10 +256,10 @@ def generate_h1h2_table(df, changes, ward_num=None, is_citywide=False):
     # Calculate totals for other categories
     if other_categories:
         other_h1 = sum(
-            h1_count for cat, h1_count, _, _ in changes if cat in other_categories
+            cat["count1"] for cat in changes if cat["category"] in other_categories
         )
         other_h2 = sum(
-            h2_count for cat, _, h2_count, _ in changes if cat in other_categories
+            cat["count2"] for cat in changes if cat["category"] in other_categories
         )
         other_change = ((other_h2 - other_h1) / other_h1 * 100) if other_h1 > 0 else 0
 
@@ -361,9 +375,18 @@ def calculate_arrest_statistics(df):
     stats["category_changes"] = calculate_category_metrics(
         df, df["category"].unique(), 2023, 2024
     )
-    stats["category_changes_detail"] = calculate_category_metrics(
-        df, df["category"].unique(), 2023, 2024, True
-    )
+
+    # Convert category_changes_detail to dictionary format
+    category_changes_detail = {}
+    for metric in stats["category_changes"]:
+        category_changes_detail[metric["category"]] = {
+            "2023": metric["count1"],
+            "2024": metric["count2"],
+            "change": metric["change"],
+            "pct_change": metric["pct_change"],
+        }
+    stats["category_changes_detail"] = category_changes_detail
+
     stats["ward_changes"] = calculate_ward_level_changes(df)
 
     # Get top 10 categories
@@ -382,8 +405,8 @@ def calculate_arrest_statistics(df):
         if change["category"] in stats["top_10_categories"]
     ]
     stats["top_10_changes"].sort(
-        key=lambda x: x["change"], reverse=True
-    )  # x["change"] is the 2024 count
+        key=lambda x: x["count2"], reverse=True
+    )  # Sort by 2024 count
 
     # H1-H2 changes
     stats["categories_h1_h2"] = calculate_category_metrics(
@@ -1014,6 +1037,32 @@ def format_plot_axes(xlabel=None, ylabel=None, fontsize=14):
     plt.yticks(fontsize=fontsize)
     plt.legend(fontsize=18)
     plt.tight_layout()
+
+
+def calculate_ward_level_changes(df):
+    """Calculate changes in arrests by ward between 2023 and 2024."""
+    ward_changes = []
+    for ward in sorted(df["WARD"].unique()):
+        ward_df = df[df["WARD"] == ward]
+        count_2024 = len(ward_df[ward_df["year"] == 2024])
+        count_2023 = len(ward_df[ward_df["year"] == 2023])
+        change = count_2024 - count_2023
+        pct_change = (
+            ((count_2024 - count_2023) / count_2023 * 100)
+            if count_2023 > 0
+            else float("inf")
+        )
+        ward_changes.append(
+            {
+                "ward": ward,
+                "2023": count_2023,
+                "2024": count_2024,
+                "change": change,
+                "pct_change": pct_change,
+            }
+        )
+    # Return sorted by ward number
+    return sorted(ward_changes, key=lambda x: x["ward"])
 
 
 def main():

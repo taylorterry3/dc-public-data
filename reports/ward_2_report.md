@@ -6,6 +6,7 @@ MPD recently made its annual public release of adult arrest data, covering 19,26
 
 This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. A complete index of these reports for each Ward is available at http://bit.ly/4iG0Uht. Taylor can be reached at taylor.terry@gmail.com.
 
+
 ### Citywide Changes in Arrest Patterns
 
 In 2024 there were 19,263 adult arrests citywide, a +27% change from 15,223 arrests in 2023 and a +30% change from the 2021-2023 average of 14,861. The increase in arrests was concentrated in Wards 1, 7, and 8. These wards each saw more than 1,000 additional arrests, while the next biggest gain was 212 additional arrests in Ward 5.
@@ -54,6 +55,7 @@ MPD reported having 3,282 sworn officers in 2024, meaning that 19,263 arrests re
 In 2024 there were 1,916 adult arrests in Ward 2, a +7% change from 2023 (citywide: +27%) and a +7% change from the 2021-2023 average (citywide: +30%). The second half of 2024 saw 928 arrests, compared to 988 in the first half.
 
 
+
 \newpage
 ### Arrest Categories with Largest Increase 2023-2024
 This table highlights the arrest categories that saw the largest percentage increases in Ward 2 from 2023 to 2024. The citywide changes are shown for comparison to help identify whether these trends are ward-specific or part of broader patterns.
@@ -88,22 +90,24 @@ The table below shows the most common types of arrests in Ward 2 during 2024, co
 | Damage to Property | 56 | 53 | -5% | -16% |
 | All Other Categories | 250 | 232 | -7% | +12% |
 
+\newpage
 ### Arrest Categories with Largest Increase H1-H2 2024
 Many areas of the city and types of crimes saw substantial changes in the pattern of arrests between the first half and second half of 2024. The following table compares arrest counts between the first half (H1) and second half (H2) of 2024 in Ward 2. This comparison helps identify emerging trends within the year. Categories are sorted by the magnitude of change between halves.
 
 | Category | H1 2024 | H2 2024 | Ward 2 Change | Citywide Change |
 |----------|---------:|---------:|---------:|----------------:|
 | Burglary | 0 | 8 | N/A | +31% |
+| Vending Violations | 0 | 0 | N/A | 0% |
 | Theft from Auto | 0 | 1 | N/A | -24% |
+| Kidnapping | 0 | 0 | N/A | 0% |
+| Gambling | 0 | 0 | N/A | +33% |
+| Arson | 0 | 0 | N/A | -50% |
 | Sex Offenses | 2 | 7 | +250% | -23% |
 | Disorderly Conduct | 8 | 14 | +75% | -14% |
 | Offenses Against Family & Children | 9 | 13 | +44% | -16% |
 | Property Crimes | 16 | 21 | +31% | -10% |
-| Damage to Property | 24 | 29 | +21% | 0% |
-| Weapon Violations | 61 | 69 | +13% | -21% |
-| Theft | 141 | 159 | +13% | +5% |
-| Assault on a Police Officer | 21 | 23 | +10% | +3% |
-| All Other Categories | 706 | 584 | -17% | +10% |
+| All Other Categories | 953 | 864 | -9% | +7% |
+
 
 \newpage
 ### Arrests by Category, 2023-2024
