@@ -91,104 +91,66 @@ def format_table_row(category, count1, count2, pct_change, citywide_pct_change=N
     )
 
 
-def generate_category_table(df, changes, ward_num=None, is_citywide=False):
-    """Generate a markdown table from category changes."""
-    table = ""
-    if ward_num:
-        table += (
-            "| Category | 2023 | 2024 | Ward {} Change | Citywide Change |\n".format(
-                ward_num
+def generate_category_table(df, categories, year1=2023, year2=2024, is_h1h2=False):
+    """Generate a markdown table showing category changes between two periods."""
+    rows = []
+    for category in categories:
+        if is_h1h2:
+            count1 = len(
+                df[
+                    (df["year"] == 2024)
+                    & (df["month"] <= 6)
+                    & (df["category"] == category)
+                ]
             )
-        )
-        table += "|----------|------:|------:|---------:|----------------:|\n"
-    else:
-        table += "| Category | 2023 | 2024 | Change |\n"
-        table += "|----------|------:|------:|---------:|\n"
-
-    if not changes:
-        # If no changes, add a row indicating no data
-        if ward_num:
-            table += "| No arrest data available for 2024 | - | - | - | - |\n"
-        else:
-            table += "| No arrest data available for 2024 | - | - | - |\n"
-        return table
-
-    # Get all categories and their changes
-    all_categories = set(cat["category"] for cat in changes)
-    shown_categories = set(
-        cat["category"] for cat in changes[:10]
-    )  # First 10 categories
-    other_categories = all_categories - shown_categories
-
-    # Add the top 10 rows
-    for category_data in changes[:10]:
-        category = category_data["category"]
-        count_2023 = category_data["count1"]
-        count_2024 = category_data["count2"]
-        pct_change = category_data["pct_change"]
-
-        if not is_citywide:
-            citywide_count_2024 = len(
-                df[(df["year"] == 2024) & (df["category"] == category)]
-            )
-            citywide_count_2023 = len(
-                df[(df["year"] == 2023) & (df["category"] == category)]
-            )
-            citywide_pct_change = (
-                (
-                    (citywide_count_2024 - citywide_count_2023)
-                    / citywide_count_2023
-                    * 100
-                )
-                if citywide_count_2023 > 0
-                else 0
-            )
-            table += format_table_row(
-                category, count_2023, count_2024, pct_change, citywide_pct_change
+            count2 = len(
+                df[
+                    (df["year"] == 2024)
+                    & (df["month"] > 6)
+                    & (df["category"] == category)
+                ]
             )
         else:
-            table += format_table_row(category, count_2023, count_2024, pct_change)
+            count1 = len(df[(df["year"] == year1) & (df["category"] == category)])
+            count2 = len(df[(df["year"] == year2) & (df["category"] == category)])
 
-    # Calculate totals for other categories
-    if other_categories:
-        other_2023 = sum(
-            cat["count1"] for cat in changes if cat["category"] in other_categories
-        )
-        other_2024 = sum(
-            cat["count2"] for cat in changes if cat["category"] in other_categories
-        )
-        other_change = other_2024 - other_2023
-        other_pct_change = (
-            ((other_2024 - other_2023) / other_2023 * 100) if other_2023 > 0 else 0
+        change = count2 - count1
+        pct_change = ((count2 - count1) / count1 * 100) if count1 > 0 else float("inf")
+
+        rows.append(
+            {
+                "category": category,
+                "count1": count1,
+                "count2": count2,
+                "change": change,
+                "pct_change": pct_change,
+            }
         )
 
-        if not is_citywide:
-            citywide_other_2023 = len(
-                df[(df["year"] == 2023) & df["category"].isin(other_categories)]
-            )
-            citywide_other_2024 = len(
-                df[(df["year"] == 2024) & df["category"].isin(other_categories)]
-            )
-            citywide_other_pct_change = (
-                (
-                    (citywide_other_2024 - citywide_other_2023)
-                    / citywide_other_2023
-                    * 100
-                )
-                if citywide_other_2023 > 0
-                else 0
-            )
-            table += format_table_row(
-                "All Other Categories",
-                other_2023,
-                other_2024,
-                other_pct_change,
-                citywide_other_pct_change,
-            )
-        else:
-            table += format_table_row(
-                "All Other Categories", other_2023, other_2024, other_pct_change
-            )
+    # Sort rows by percentage change, handling inf values
+    rows.sort(
+        key=lambda x: (
+            -float("inf") if x["pct_change"] == float("inf") else x["pct_change"]
+        ),
+        reverse=True,
+    )
+
+    # Generate table header
+    period1 = "H1 2024" if is_h1h2 else str(year1)
+    period2 = "H2 2024" if is_h1h2 else str(year2)
+
+    table = f"| Arrest Category | {period1} | {period2} | Change | % Change |\n"
+    table += "|----------------|------:|------:|--------:|----------:|\n"
+
+    # Add rows
+    for row in rows:
+        table += "| {} | {:,} | {:,} | {:+,} | {} |\n".format(
+            row["category"],
+            row["count1"],
+            row["count2"],
+            row["change"],
+            format_percentage(row["pct_change"]),
+        )
 
     return table
 
@@ -586,7 +548,7 @@ def generate_overview_section(
     stats_to_use = citywide_stats if not is_citywide else ward_stats
 
     # Keep the first sentence about total arrests and averages
-    description += "In 2024 there were {:,} adult arrests citywide, a {} change from {:,} arrests in 2023 and a {} change from the 2021-2023 average of {:,}. ".format(
+    description += "in 2024 MPD made{:,} adult arrests citywide, a {} change from {:,} arrests in 2023 and a {} change from the 2021-2023 average of {:,}. ".format(
         stats_to_use["arrests_2024"],
         format_percentage(stats_to_use["pct_change_2023"]),
         stats_to_use["arrests_2023"],
@@ -638,14 +600,14 @@ def generate_overview_section(
             f"{category_changes['Traffic Violations']['change']:,} additional arrests for Traffic Violations"
         )
     if "Theft" in category_changes:
-        category_text.append(f"{category_changes['Theft']['change']:,} for Theft")
+        category_text.append(f"{category_changes['Theft']['change']:,} more for Theft")
     if "Narcotics" in category_changes:
         category_text.append(
-            f"{category_changes['Narcotics']['change']:,} for Narcotics"
+            f"{category_changes['Narcotics']['change']:,} more for Narcotics"
         )
     if "Liquor Law Violations" in category_changes:
         category_text.append(
-            f"{category_changes['Liquor Law Violations']['change']:,} for Liquor Law Violations"
+            f"{category_changes['Liquor Law Violations']['change']:,} more for Liquor Law Violations"
         )
 
     if category_text:
@@ -702,7 +664,15 @@ def generate_overview_section(
 
     # Add page break and description before crosstab
     description += "\\newpage\n\n"
-    description += "This crosstab shows the percentage change for these arrest categories by Ward from 2023 to 2024.\n\n"
+    description += "This crosstab shows the percentage change for these arrest categories by Ward from 2023 to 2024. "
+    description += "Note especially the roughly tenfold increase in Liquor Law Violation arrests in Wards 7 and 8, "
+    description += (
+        "as well as a similarly large increase in Traffic Violation arrests in Ward 7. "
+    )
+    description += (
+        "Ward 1 saw fivefold increases in Liquor Law Violation and Narcotics arrests, "
+    )
+    description += "while Ward 5 saw a similar rate of increase in Liquor Law Violation Arrests. \n\n"
 
     # Add ward by category crosstab
     # Get the top 4 categories from the previous table
@@ -775,18 +745,21 @@ def generate_overview_section(
     description += "This is a substantial increase from the 2021-2023 average of {:.1f} arrests per officer per year, ".format(
         arrests_per_officer_stats[1]  # 2021-2023 average
     )
-    description += "but is far from a return to the 2016-2019 average of {:.1f} arrests per officer. ".format(
+    description += "but is far from a return to the 2016-2019 average of {:.1f} arrests per officer. \n\n".format(
         arrests_per_officer_stats[0]  # 2016-2019 average
     )
-    description += "The chart below shows the trend in arrests per sworn officer over time, as well as the trend in stops per officer for periods when this data is available. (MPD stops data currently runs only through June of 2024, and the release schedule is irregular.)\n\n"
+    description += "The chart below shows the trend in arrests per sworn officer per monthover time, as well as the trend in stops per officer for periods when this data is available. "
+    description += "MPD stops data currently runs only from 2019 through June of 2024. The release schedule is irregular and MPD has historically refused to release this data "
+    description += "in response to FOIA requests, and so it is unclear when the rest of the 2024 data will be available. "
+    description += "\n\n"
 
-    # Always show the citywide officer trends plot
-    description += "![Arrests and Stops per Officer](citywide_officer_trends.png)\n\n"
+    # Change the image reference to not include a title
+    description += "![](citywide_officer_trends.png)\n\n"
 
     # Add ward-specific overview section for ward reports
     if not is_citywide:
         description += "### Ward {} Overview\n\n".format(ward_num)
-        description += "In 2024 there were {:,} adult arrests in Ward {}, a {} change from 2023 (citywide: {}) and a {} change ".format(
+        description += "in 2024 MPD made{:,} adult arrests in Ward {}, a {} change from 2023 (citywide: {}) and a {} change ".format(
             ward_stats["arrests_2024"],
             ward_num,
             format_percentage(ward_stats["pct_change_2023"]),
@@ -813,47 +786,20 @@ def generate_category_sections(df, stats, is_citywide=False, ward_num=None):
 
     # Add citywide category table
     description += "### Arrests by Category\n\n"
+    description += "The table below shows the number of arrests by category citywide for the years 2023 and 2024, "
+    description += "sorted by percentage change. "
+    description += "Of particular note is that DWI arrests remained flat despite a greater than threefold increase in "
+    description += "arrests for Traffic Violations. \n\n"
 
-    # Get all categories and sort by 2024 count - filter out NaN values
+    # Get all categories and filter out NaN values
     categories = sorted(cat for cat in df["category"].unique() if pd.notna(cat))
-    rows = []
-    for category in categories:
-        count_2023 = len(df[(df["year"] == 2023) & (df["category"] == category)])
-        count_2024 = len(df[(df["year"] == 2024) & (df["category"] == category)])
-        change = count_2024 - count_2023
-        pct_change = (
-            ((count_2024 - count_2023) / count_2023 * 100)
-            if count_2023 > 0
-            else float("inf")
-        )
 
-        rows.append(
-            {
-                "category": category,
-                "count_2023": count_2023,
-                "count_2024": count_2024,
-                "change": change,
-                "pct_change": pct_change,
-            }
-        )
+    # Generate table using the updated generate_category_table function
+    description += generate_category_table(df, categories)
 
-    # Sort rows by 2024 count
-    rows.sort(key=lambda x: x["count_2024"], reverse=True)
+    # Add the new text between table and graph
+    description += "\nThis chart presents the same data as above in a visual format, sorted by arrest category.\n\n"
 
-    # Generate table
-    description += "| Arrest Category | 2023 | 2024 | Change | % Change |\n"
-    description += "|----------------|------:|------:|--------:|----------:|\n"
-
-    for row in rows:
-        description += "| {} | {:,} | {:,} | {:+,} | {} |\n".format(
-            row["category"],
-            row["count_2023"],
-            row["count_2024"],
-            row["change"],
-            format_percentage(row["pct_change"]),
-        )
-
-    description += "\n"
     return description
 
 
@@ -863,7 +809,6 @@ def generate_visualization_sections(is_citywide=False, ward_num=None):
 
     # Remove Monthly Trends section, keep only Category Distribution
     description += "\n\\newpage\n"
-    description += "### Arrests by Category, 2023-2024\n"
     if not is_citywide:
         description += f"![](ward_{ward_num}_categories.png)\n"
     else:
@@ -872,149 +817,55 @@ def generate_visualization_sections(is_citywide=False, ward_num=None):
     return description
 
 
-def generate_ward_appendix(df, ward_num):
-    """Generate appendix section for a specific ward."""
-    # Add page break before each ward section
-    description = "\n\\newpage\n"
-    description += f"## Ward {ward_num}\n\n"
-
-    # Get ward-specific data
-    ward_df = df[df["WARD"] == ward_num]
-
-    # Calculate category-level changes for the ward
-    # Filter out NaN values and convert to list before sorting
-    categories = sorted(cat for cat in df["category"].unique() if pd.notna(cat))
-
-    rows = []
-    for category in categories:
-        count_2023 = len(
-            ward_df[(ward_df["year"] == 2023) & (ward_df["category"] == category)]
-        )
-        count_2024 = len(
-            ward_df[(ward_df["year"] == 2024) & (ward_df["category"] == category)]
-        )
-        change = count_2024 - count_2023
-        pct_change = (
-            ((count_2024 - count_2023) / count_2023 * 100)
-            if count_2023 > 0
-            else float("inf")
-        )
-
-        rows.append(
-            {
-                "category": category,
-                "count_2023": count_2023,
-                "count_2024": count_2024,
-                "change": change,
-                "pct_change": pct_change,
-            }
-        )
-
-    # Sort rows by 2024 count
-    rows.sort(key=lambda x: x["count_2024"], reverse=True)
-
-    # Generate table
-    description += "| Arrest Category | 2023 | 2024 | Change | % Change |\n"
-    description += "|----------------|------:|------:|--------:|----------:|\n"
-
-    for row in rows:
-        description += "| {} | {:,} | {:,} | {:+,} | {} |\n".format(
-            row["category"],
-            row["count_2023"],
-            row["count_2024"],
-            row["change"],
-            format_percentage(row["pct_change"]),
-        )
-
-    description += f"\n![](ward_{ward_num}_categories.png)\n\n"
-
-    return description
+def generate_citywide_plots(df, reports_dir, officers_df, stops_df=None):
+    """Generate plots for citywide data."""
+    create_plots(
+        df, reports_dir=reports_dir, officers_df=officers_df, stops_df=stops_df
+    )
 
 
-def generate_district_appendix(df, district):
-    """Generate appendix section for a specific police district."""
-    description = "\n\\newpage\n"
-    description += f"## {district}\n\n"
-
-    # Get district-specific data
-    district_df = df[df["ARREST_DISTRICT"] == district]
-
-    # Calculate category-level changes for the district
-    categories = sorted(cat for cat in df["category"].unique() if pd.notna(cat))
-
-    rows = []
-    for category in categories:
-        count_2023 = len(
-            district_df[
-                (district_df["year"] == 2023) & (district_df["category"] == category)
-            ]
-        )
-        count_2024 = len(
-            district_df[
-                (district_df["year"] == 2024) & (district_df["category"] == category)
-            ]
-        )
-        change = count_2024 - count_2023
-        pct_change = (
-            ((count_2024 - count_2023) / count_2023 * 100)
-            if count_2023 > 0
-            else float("inf")
-        )
-
-        rows.append(
-            {
-                "category": category,
-                "count_2023": count_2023,
-                "count_2024": count_2024,
-                "change": change,
-                "pct_change": pct_change,
-            }
-        )
-
-    # Sort rows by 2024 count
-    rows.sort(key=lambda x: x["count_2024"], reverse=True)
-
-    # Generate table
-    description += "| Arrest Category | 2023 | 2024 | Change | % Change |\n"
-    description += "|----------------|------:|------:|--------:|----------:|\n"
-
-    for row in rows:
-        description += "| {} | {:,} | {:,} | {:+,} | {} |\n".format(
-            row["category"],
-            row["count_2023"],
-            row["count_2024"],
-            row["change"],
-            format_percentage(row["pct_change"]),
-        )
-
-    description += f"\n![](district_{district.replace(' ', '_')}_categories.png)\n\n"
-
-    return description
+def generate_ward_plots(df, ward_num, reports_dir, officers_df, stops_df=None):
+    """Generate plots for a specific ward."""
+    create_plots(df, "ward", ward_num, reports_dir, officers_df)
 
 
 def generate_district_plots(df, district, reports_dir, officers_df, stops_df=None):
-    """Generate plots for a specific police district."""
-    district_df = df[df["ARREST_DISTRICT"] == district]
-
-    create_category_distribution_plot(
-        district_df[district_df["year"] == 2023],
-        district_df[district_df["year"] == 2024],
-        f"{district} Arrests by Category, 2023-2024",
-    )
-    plt.savefig(
-        reports_dir / f"district_{district.replace(' ', '_')}_categories.png", dpi=100
-    )
-    plt.close()
+    """Generate plots for a specific district."""
+    create_plots(df, "district", district, reports_dir, officers_df)
 
 
-def generate_report(df, officers_df, ward_num=None):
+def generate_area_appendix(df, area_type, area_id):
+    """Generate appendix section for a ward or district."""
+    description = "\n\\newpage\n"
+    # Capitalize area_type for display
+    display_type = area_type.capitalize()
+    if area_type.lower() == "district":
+        description += f"## {area_id}\n\n"  # Just show district ID (e.g., "## 1D")
+    else:
+        description += f"## {display_type} {area_id}\n\n"  # Show "Ward X"
+
+    # Get area-specific data
+    area_col = "WARD" if area_type.lower() == "ward" else "ARREST_DISTRICT"
+    area_df = df[df[area_col] == area_id]
+
+    # Calculate category-level changes
+    categories = sorted(cat for cat in df["category"].unique() if pd.notna(cat))
+    table = generate_category_table(area_df, categories)
+    description += table
+
+    # Use underscore in image reference to match the saved filename
+    file_prefix = "ward" if area_type.lower() == "ward" else "district"
+    description += f"\n![]({file_prefix}_{area_id}_categories.png)\n\n"
+
+    return description
+
+
+def generate_report(df, officers_df):
     """Generate the complete report with citywide analysis and ward/district appendices."""
-    # Generate main citywide report
     sections = []
     citywide_stats = calculate_arrest_statistics(df)
     arrests_per_officer_stats = calculate_arrests_per_officer(df, officers_df)
 
-    # Main report sections
     sections.append(generate_background_section(citywide_stats, is_citywide=True))
     sections.append(
         generate_overview_section(
@@ -1031,51 +882,29 @@ def generate_report(df, officers_df, ward_num=None):
 
     # Add Ward Appendix
     sections.append("\n\\newpage\n# Appendix 1: Data by Ward\n\n")
-    # Get sorted ward numbers
     ward_numbers = sorted(df["WARD"].unique())
-    # Add first ward without page break
     sections.append(
-        generate_ward_appendix(df, ward_numbers[0]).replace("\n\\newpage\n", "\n")
+        generate_area_appendix(df, "Ward", ward_numbers[0]).replace(
+            "\n\\newpage\n", "\n"
+        )
     )
-    # Add remaining wards with page breaks
     for ward_num in ward_numbers[1:]:
-        sections.append(generate_ward_appendix(df, ward_num))
+        sections.append(generate_area_appendix(df, "Ward", ward_num))
 
     # Add District Appendix
     sections.append("\n\\newpage\n# Appendix 2: Data by Police District\n\n")
-    # Get sorted districts, filtering out NaN values
     districts = sorted(
         dist for dist in df["ARREST_DISTRICT"].unique() if pd.notna(dist)
     )
-    # Add first district without page break
     sections.append(
-        generate_district_appendix(df, districts[0]).replace("\n\\newpage\n", "\n")
+        generate_area_appendix(df, "District", districts[0]).replace(
+            "\n\\newpage\n", "\n"
+        )
     )
-    # Add remaining districts with page breaks
     for district in districts[1:]:
-        sections.append(generate_district_appendix(df, district))
+        sections.append(generate_area_appendix(df, "District", district))
 
     return "\n".join(sections)
-
-
-def create_monthly_trends_plot(df, title):
-    """Create a line plot showing monthly arrest trends."""
-    plt.figure(figsize=(12, 6))
-    monthly_trends = df.groupby("month_year").size()
-    monthly_trends.index = pd.to_datetime(monthly_trends.index + "-01")
-    monthly_trends.plot(kind="line")
-    plt.xlabel("Date", fontsize=16)
-    plt.ylabel("Number of Arrests", fontsize=16)
-
-    # Get unique years and create tick marks for January of each year
-    years = sorted(df["date"].dt.year.unique())
-    year_ticks = [pd.Timestamp(f"{year}-01-01") for year in years]
-    plt.xticks(year_ticks, years, rotation=0, fontsize=14)
-    plt.yticks(fontsize=14)
-
-    # Add grid lines for better readability
-    plt.grid(True, axis="x", linestyle="--", alpha=0.7)
-    plt.tight_layout()
 
 
 def create_category_distribution_plot(df_2023, df_2024, title):
@@ -1113,31 +942,34 @@ def create_category_distribution_plot(df_2023, df_2024, title):
     plt.tight_layout()
 
 
-def generate_citywide_plots(df, reports_dir, officers_df, stops_df=None):
-    """Generate plots for citywide data."""
-    # Remove monthly trends plot generation
+def create_plots(
+    df, area_type=None, area_id=None, reports_dir=None, officers_df=None, stops_df=None
+):
+    """Generate plots for citywide, ward, or district data."""
+    if area_type and area_id:
+        # Filter data for specific area
+        area_col = "WARD" if area_type == "ward" else "ARREST_DISTRICT"
+        df = df[df[area_col] == area_id]
+        # Use space instead of underscore in filename
+        prefix = f"{area_type} {str(area_id)}"
+    else:
+        prefix = "citywide"
+
+    # Create category distribution plot
     create_category_distribution_plot(
-        df[df["year"] == 2023], df[df["year"] == 2024], "DC Arrest Categories"
+        df[df["year"] == 2023],
+        df[df["year"] == 2024],
+        f"{prefix.title()} Arrests by Category",
     )
-    plt.savefig(reports_dir / "citywide_categories.png", dpi=100)
+    # Use space in filename
+    plt.savefig(reports_dir / f"{prefix.replace(' ', '_')}_categories.png", dpi=100)
     plt.close()
 
-    create_officer_trends_plot(df, officers_df, stops_df)
-    plt.savefig(reports_dir / "citywide_officer_trends.png", dpi=100)
-    plt.close()
-
-
-def generate_ward_plots(df, ward_num, reports_dir, officers_df, stops_df=None):
-    """Generate plots for a specific ward."""
-    ward_df = df[df["WARD"] == ward_num]
-
-    create_category_distribution_plot(
-        ward_df[ward_df["year"] == 2023],
-        ward_df[ward_df["year"] == 2024],
-        f"Ward {ward_num} Arrests by Category, 2023-2024",
-    )
-    plt.savefig(reports_dir / f"ward_{ward_num}_categories.png", dpi=100)
-    plt.close()
+    # Create officer trends plot for citywide only
+    if not area_type:
+        create_officer_trends_plot(df, officers_df, stops_df)
+        plt.savefig(reports_dir / "citywide_officer_trends.png", dpi=100)
+        plt.close()
 
 
 def preprocess_data(df):
@@ -1152,6 +984,13 @@ def preprocess_data(df):
     if "WARD" in df.columns:
         df["WARD"] = df["WARD"].fillna(-1).astype(int)
         df = df[df.WARD > 0]  # Remove any rows with invalid ward numbers
+
+    # Standardize district column name if present
+    district_col = next(
+        (col for col in df.columns if col.lower() == "arrest_district"), None
+    )
+    if district_col and district_col != "ARREST_DISTRICT":
+        df = df.rename(columns={district_col: "ARREST_DISTRICT"})
 
     return df
 
@@ -1216,27 +1055,12 @@ def calculate_ward_level_changes(df):
 def main():
     """Main function to generate arrest report."""
     reports_dir = Path("reports")
-    reports_dir.mkdir(parents=True, exist_ok=True)
+    reports_dir.mkdir(exist_ok=True)
 
     print("Reading and preprocessing data...")
     df = preprocess_data(pd.read_csv("data/clean/arrest_data.csv.gz", low_memory=False))
     officers_df = pd.read_csv("data/clean/officers.csv")
     stops_df = None
-
-    # Print column names to check case
-    print("\nAvailable columns:")
-    print(df.columns.tolist())
-
-    # Try to find the district column case-insensitively
-    district_col = next(
-        (col for col in df.columns if col.lower() == "arrest_district"), None
-    )
-    if not district_col:
-        raise ValueError(
-            "Could not find arrest district column. Available columns: "
-            + ", ".join(df.columns)
-        )
-
     try:
         stops_df = preprocess_data(
             pd.read_csv("data/clean/stop_data.csv.gz", low_memory=False)
@@ -1245,38 +1069,26 @@ def main():
         pass
 
     print("Generating plots...")
-    # Generate citywide plots
-    generate_citywide_plots(df, reports_dir, officers_df, stops_df)
+    # Generate all plots
+    create_plots(
+        df, reports_dir=reports_dir, officers_df=officers_df, stops_df=stops_df
+    )
 
-    # Generate ward-specific category plots for appendix
-    print("Generating ward plots...")
-    for ward_num in tqdm(sorted(df["WARD"].unique()), desc="Generating ward plots"):
-        generate_ward_plots(df, ward_num, reports_dir, officers_df, stops_df)
+    for ward in tqdm(sorted(df["WARD"].unique()), desc="Ward plots"):
+        create_plots(df, "ward", ward, reports_dir, officers_df)
 
-    # Generate district-specific category plots for appendix
-    print("Generating district plots...")
-    # Filter out NaN values from districts before sorting
-    districts = sorted(dist for dist in df[district_col].unique() if pd.notna(dist))
-    for district in tqdm(districts, desc="Generating district plots"):
-        # Update the district column name in generate_district_plots and generate_district_appendix calls
-        generate_district_plots(
-            df.rename(columns={district_col: "ARREST_DISTRICT"}),
-            district,
-            reports_dir,
-            officers_df,
-            stops_df,
-        )
+    districts = sorted(
+        dist for dist in df["ARREST_DISTRICT"].unique() if pd.notna(dist)
+    )
+    for district in tqdm(districts, desc="District plots"):
+        create_plots(df, "district", district, reports_dir, officers_df)
 
     print("Generating report...")
-    # Generate single report with appendices
+    report = generate_report(df, officers_df)
     with open(reports_dir / "arrest_report.md", "w") as f:
-        f.write(
-            generate_report(
-                df.rename(columns={district_col: "ARREST_DISTRICT"}), officers_df
-            )
-        )
+        f.write(report)
 
-    print("\nReport generated successfully in the reports directory.")
+    print("\nReport generated successfully in reports/arrest_report.md")
 
 
 if __name__ == "__main__":

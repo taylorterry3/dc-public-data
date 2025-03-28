@@ -4,8 +4,8 @@ Data Sources
 ## Crime Data
 - Adult_Arrests.csv: https://opendata.dc.gov/datasets/adult-arrests/explore
 - Annual files get posted here: https://mpdc.dc.gov/node/1379551. The open data portal takes a while to get updated so I've temporarily merged the 2023 data onto the master file. The layouts are the same but the quoting is different; this is handled in ETL.py
-- Crime_Incidents_in_20**.csv: https://opendata.dc.gov/search?collection=Dataset&q=crime%20incidents&sort=-created. 2023 data is only through Sept 10
-- dc-crimes-search-results.csv: https://crimecards.dc.gov/all:crimes/all:weapons/8:years/citywide:ward. More up to date than annual incident data, goes back 8 years.
+- Crime_Incidents_in_20**.csv: https://opendata.dc.gov/search?collection=Dataset&q=crime%20incidents&sort=-created.
+- dc-crimes-search-results.csv: https://crimecards.dc.gov/all:crimes/all:weapons/8:years/citywide:ward. More up to date than annual incident data, goes back 8 years. The database that drives it has older data, so as I get new files I tag them as .old. 8 years is fine for now but I need to write a process to diff them
 - Juvenile_Arrests.csv: https://opendata.dc.gov/datasets/juvenile-arrests/explore
 - officers.csv: https://mpdc.dc.gov/page/monthly-staffing-reports transcribed from graphic.
 - Stop_Data.csv: https://opendata.dc.gov/datasets/stop-data/explore. This is a mess, they started breaking it up into different year groups. More info here: https://mpdc.dc.gov/stopdata
