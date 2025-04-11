@@ -1040,99 +1040,31 @@ def create_plots(
 
 
 def preprocess_data(df):
-    """Preprocess the arrest or stops data for analysis."""
-    # Parse dates and extract components
-    print("\nDate parsing debug:")
-    print(f"Number of rows before date parsing: {len(df)}")
-    print(f"Number of 2024 arrests before date parsing: {len(df[df['year'] == 2024])}")
-    print(f"Number of null dates: {df['date'].isnull().sum()}")
+    """Preprocess the data for analysis."""
+    # Convert date column to datetime if it's not already
+    if not pd.api.types.is_datetime64_any_dtype(df["date"]):
+        df["date"] = pd.to_datetime(df["date"])
 
-    # Convert date column to datetime
-    df["date"] = pd.to_datetime(df["date"])
-
-    # Use existing year column instead of creating a new one
-    print(f"\nNumber of rows after date parsing: {len(df)}")
-    print(f"Number of 2024 arrests after date parsing: {len(df[df['year'] == 2024])}")
-    print(f"Number of invalid dates: {df['date'].isnull().sum()}")
-
-    # Debug year column
-    print("\nYear column debug:")
-    print(f"Years in data: {sorted(df['year'].unique())}")
-    print(f"2024 rows: {len(df[df['year'] == 2024])}")
-    print(f"2023 rows: {len(df[df['year'] == 2023])}")
-
-    # Extract month from date
+    # Extract year and month
+    df["year"] = df["date"].dt.year
     df["month"] = df["date"].dt.month
     df["month_year"] = df["date"].dt.strftime("%Y-%m")
 
-    # Clean ward numbers if present
-    if "ward" in df.columns:
-        print("\nWard processing debug:")
-        print(
-            f"Number of 2024 arrests before ward processing: {len(df[df['year'] == 2024])}"
-        )
-        print("\nWard values before processing:")
-        print(df["ward"].value_counts().sort_index())
+    # Handle ward numbers - convert to string first, then handle invalid values
+    df["ward"] = df["ward"].astype(str)
+    df.loc[~df["ward"].str.isdigit(), "ward"] = "Unknown"
+    df.loc[df["ward"].str.isdigit(), "ward"] = df.loc[
+        df["ward"].str.isdigit(), "ward"
+    ].astype(int)
 
-        # Convert NaN and invalid ward numbers to "Unknown" instead of filtering them out
-        df["ward"] = df["ward"].fillna("Unknown")
-        df.loc[~df["ward"].astype(str).str.isdigit(), "ward"] = "Unknown"
-        print("\nWard values after processing:")
-        print(df["ward"].value_counts().sort_index())
-        print(
-            f"\nNumber of 2024 arrests after ward processing: {len(df[df['year'] == 2024])}"
-        )
+    # Handle ANC IDs
+    df["anc_id"] = df["anc_id"].astype(str)
+    df.loc[df["anc_id"].isna(), "anc_id"] = "Unknown"
 
-    # Standardize district column name if present
-    district_col = next(
-        (col for col in df.columns if col.lower() == "arrest_district"), None
-    )
-    if district_col and district_col != "arrest_district":
-        df = df.rename(columns={district_col: "arrest_district"})
+    # Handle PSA values
+    df["arrest_psa"] = df["arrest_psa"].astype(str)
+    df.loc[df["arrest_psa"].isna(), "arrest_psa"] = "Unknown"
 
-    # Ensure anc_id is treated as a string and handle NaNs
-    if "anc_id" in df.columns:
-        df["anc_id"] = df["anc_id"].fillna("Unknown").astype(str)
-
-    # Ensure arrest_psa is treated as a string and handle NaNs
-    if "arrest_psa" in df.columns:
-        print("\nPSA processing debug:")
-        print(
-            f"Number of 2024 arrests before PSA processing: {len(df[df['year'] == 2024])}"
-        )
-        print("\nPSA values before processing:")
-        print(df["arrest_psa"].value_counts())
-
-        # Convert NaN to "Unknown"
-        df["arrest_psa"] = df["arrest_psa"].fillna("Unknown")
-
-        # Convert numeric values to strings without decimal points
-        df["arrest_psa"] = df["arrest_psa"].apply(
-            lambda x: (
-                str(int(float(x)))
-                if pd.notna(x) and str(x).replace(".", "").isdigit()
-                else x
-            )
-        )
-
-        # Only convert non-digit values to "Unknown" if they're not already valid PSA numbers
-        # Valid PSA numbers are 3 digits between 101 and 708
-        def is_valid_psa(x):
-            try:
-                psa_num = int(x)
-                return 101 <= psa_num <= 708
-            except (ValueError, TypeError):
-                return False
-
-        df.loc[~df["arrest_psa"].apply(is_valid_psa), "arrest_psa"] = "Unknown"
-
-        print("\nPSA values after processing:")
-        print(df["arrest_psa"].value_counts())
-        print(
-            f"Number of 2024 arrests after PSA processing: {len(df[df['year'] == 2024])}"
-        )
-
-    print(f"\nFinal number of 2024 arrests: {len(df[df['year'] == 2024])}")
     return df
 
 
@@ -1230,9 +1162,9 @@ def main():
         pass
 
     print("\n=== Generating report ===")
-    report_anc_psa = generate_report(df, officers_df)
-    with open(reports_dir / "arrest_report_anc_psa.md", "w") as f:
-        f.write(report_anc_psa)
+    report = generate_report(df, officers_df)
+    with open(reports_dir / "arrest_report.md", "w") as f:
+        f.write(report)
 
     print("\nReport generated successfully in the reports directory")
 
