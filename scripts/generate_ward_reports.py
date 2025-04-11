@@ -750,8 +750,8 @@ def generate_overview_section(
     description += "in response to FOIA requests, and so it is unclear when the rest of the 2024 data will be available. "
     description += "\n\n"
 
-    # Change the image reference to not include a title
-    description += "![](citywide_officer_trends.png)\n\n"
+    # Change the image reference to point to the images directory
+    description += "![](images/citywide_officer_trends.png)\n\n"
 
     return description
 
@@ -779,7 +779,7 @@ def generate_category_sections(df: pd.DataFrame, stats: dict) -> str:
     # Add the chart description and image
     description += "\n\\newpage\n"
     description += "\nThis chart presents the same data as above in a visual format, sorted by arrest category.\n\n"
-    description += "![](citywide_categories.png)\n"
+    description += "![](images/citywide_categories.png)\n"
 
     return description
 
@@ -827,7 +827,7 @@ def generate_area_appendix(df, area_type, area_id):
 
     # Use underscore in image reference to match the saved filename
     file_prefix = "ward" if area_type.lower() == "ward" else "district"
-    description += f"\n![]({file_prefix}_{area_id}_categories.png)\n\n"
+    description += f"\n![](images/{file_prefix}_{area_id}_categories.png)\n\n"
 
     return description
 
@@ -847,7 +847,7 @@ def generate_anc_appendix(df):
             description += table
             # Sanitize the anc for the filename
             sanitized_anc = str(anc).replace(" ", "_").replace("/", "-")
-            description += f"\n![](anc_{sanitized_anc}_categories.png)\n\n"
+            description += f"\n![](images/anc_{sanitized_anc}_categories.png)\n\n"
     return description
 
 
@@ -865,11 +865,13 @@ def generate_psa_appendix(df):
         description += table
         # Sanitize the psa for the filename
         sanitized_psa = str(psa).replace(" ", "_").replace("/", "-")
-        description += f"\n![](psa_{sanitized_psa}_categories.png)\n\n"
+        description += f"\n![](images/psa_{sanitized_psa}_categories.png)\n\n"
     return description
 
 
-def generate_report(df: pd.DataFrame, officers_df: pd.DataFrame) -> str:
+def generate_report(
+    df: pd.DataFrame, officers_df: pd.DataFrame, images_dir: Path
+) -> str:
     """Generate the complete report with citywide analysis and ward/district appendices."""
     print("\n=== Starting report generation ===")
     sections = []
@@ -996,8 +998,13 @@ def create_category_distribution_plot(df_2023, df_2024, title):
 
 
 def create_plots(
-    df, area_type=None, area_id=None, reports_dir=None, officers_df=None, stops_df=None
-):
+    df: pd.DataFrame,
+    area_type: str | None = None,
+    area_id: str | int | None = None,
+    reports_dir: Path | None = None,
+    officers_df: pd.DataFrame | None = None,
+    stops_df: pd.DataFrame | None = None,
+) -> None:
     """Generate plots for citywide, ward, district, ANC, or PSA data."""
     if area_type and area_id:
         # Determine the correct column based on area type
@@ -1013,9 +1020,16 @@ def create_plots(
             raise ValueError(f"Unsupported area type: {area_type}")
 
         # Filter data for specific area
-        df = df[df[area_col] == area_id]
-        # Use space instead of underscore in filename
-        prefix = f"{area_type} {str(area_id)}"
+        df = df[df[area_col] == area_id].copy()
+        if df.empty:
+            print(f"Warning: No data found for {area_type} {area_id}")
+            return
+
+        # For PSAs, ensure we use the string value directly
+        if area_type == "psa":
+            prefix = f"{area_type} {area_id}"
+        else:
+            prefix = f"{area_type} {str(area_id)}"
     else:
         prefix = "citywide"
 
@@ -1023,19 +1037,28 @@ def create_plots(
     sanitized_prefix = prefix.replace(" ", "_").replace("/", "-")
 
     # Create category distribution plot
+    df_2023 = df[df["year"] == 2023].copy()
+    df_2024 = df[df["year"] == 2024].copy()
+
+    if df_2023.empty or df_2024.empty:
+        print(f"Warning: Missing data for either 2023 or 2024 in {prefix}")
+        return
+
     create_category_distribution_plot(
-        df[df["year"] == 2023],
-        df[df["year"] == 2024],
+        df_2023,
+        df_2024,
         f"{prefix.title()} Arrests by Category",
     )
-    # Use sanitized prefix in filename
-    plt.savefig(reports_dir / f"{sanitized_prefix}_categories.png", dpi=100)
+    # Save to images directory
+    images_dir = reports_dir / "images"
+    images_dir.mkdir(exist_ok=True)
+    plt.savefig(images_dir / f"{sanitized_prefix}_categories.png", dpi=100)
     plt.close()
 
     # Create officer trends plot for citywide only
-    if not area_type:
+    if not area_type and officers_df is not None:
         create_officer_trends_plot(df, officers_df, stops_df)
-        plt.savefig(reports_dir / "citywide_officer_trends.png", dpi=100)
+        plt.savefig(images_dir / "citywide_officer_trends.png", dpi=100)
         plt.close()
 
 
@@ -1050,20 +1073,35 @@ def preprocess_data(df):
     df["month"] = df["date"].dt.month
     df["month_year"] = df["date"].dt.strftime("%Y-%m")
 
-    # Handle ward numbers - convert to string first, then handle invalid values
-    df["ward"] = df["ward"].astype(str)
-    df.loc[~df["ward"].str.isdigit(), "ward"] = "Unknown"
-    df.loc[df["ward"].str.isdigit(), "ward"] = df.loc[
-        df["ward"].str.isdigit(), "ward"
-    ].astype(int)
+    # Only process ward column if it exists
+    if "ward" in df.columns:
+        # Handle ward numbers - convert to string first, then handle invalid values
+        df["ward"] = df["ward"].astype(str)
+        df.loc[~df["ward"].str.isdigit(), "ward"] = "Unknown"
+        df.loc[df["ward"].str.isdigit(), "ward"] = df.loc[
+            df["ward"].str.isdigit(), "ward"
+        ].astype(int)
 
-    # Handle ANC IDs
-    df["anc_id"] = df["anc_id"].astype(str)
-    df.loc[df["anc_id"].isna(), "anc_id"] = "Unknown"
+    # Handle ANC IDs if the column exists
+    if "anc_id" in df.columns:
+        df["anc_id"] = df["anc_id"].astype(str)
+        df.loc[df["anc_id"].isna(), "anc_id"] = "Unknown"
 
-    # Handle PSA values
-    df["arrest_psa"] = df["arrest_psa"].astype(str)
-    df.loc[df["arrest_psa"].isna(), "arrest_psa"] = "Unknown"
+    # Handle PSA values if the column exists
+    if "arrest_psa" in df.columns:
+        # Convert to string and handle NaN values
+        df["arrest_psa"] = df["arrest_psa"].astype(str)
+        df.loc[df["arrest_psa"].isna(), "arrest_psa"] = "Unknown"
+        # Remove any decimal points and trailing zeros from numeric PSAs
+        df.loc[df["arrest_psa"].str.match(r"^\d+\.0$"), "arrest_psa"] = df.loc[
+            df["arrest_psa"].str.match(r"^\d+\.0$"), "arrest_psa"
+        ].str.replace(r"\.0$", "")
+
+    # Handle district values if the column exists
+    if "arrest_district" in df.columns:
+        # Convert to string and handle NaN values
+        df["arrest_district"] = df["arrest_district"].astype(str)
+        df.loc[df["arrest_district"].isna(), "arrest_district"] = "Unknown"
 
     return df
 
@@ -1130,6 +1168,10 @@ def main():
     reports_dir = Path("reports")
     reports_dir.mkdir(exist_ok=True)
 
+    # Create images subdirectory
+    images_dir = reports_dir / "images"
+    images_dir.mkdir(exist_ok=True)
+
     print("\n=== Starting data processing ===")
     print("Reading and preprocessing data...")
     df = pd.read_csv("data/clean/arrest_data.csv.gz", low_memory=False)
@@ -1161,8 +1203,38 @@ def main():
     except FileNotFoundError:
         pass
 
+    print("\n=== Generating plots ===")
+    # Generate citywide plots
+    print("Generating citywide plots...")
+    create_plots(
+        df, reports_dir=reports_dir, officers_df=officers_df, stops_df=stops_df
+    )
+
+    # Generate ward plots
+    print("Generating ward plots...")
+    for ward in sorted(df["ward"].unique()):
+        create_plots(df, "ward", ward, reports_dir, officers_df)
+
+    # Generate district plots
+    print("Generating district plots...")
+    for district in sorted(df["arrest_district"].unique()):
+        if pd.notna(district):
+            create_plots(df, "district", district, reports_dir, officers_df)
+
+    # Generate ANC plots
+    print("Generating ANC plots...")
+    for anc in sorted(df["anc_id"].unique()):
+        if anc:  # Skip empty strings
+            create_plots(df, "anc", anc, reports_dir, officers_df)
+
+    # Generate PSA plots
+    print("Generating PSA plots...")
+    for psa in sorted(df["arrest_psa"].unique()):
+        if pd.notna(psa):  # Skip NaN values
+            create_plots(df, "psa", psa, reports_dir, officers_df)
+
     print("\n=== Generating report ===")
-    report = generate_report(df, officers_df)
+    report = generate_report(df, officers_df, images_dir)
     with open(reports_dir / "arrest_report.md", "w") as f:
         f.write(report)
 
