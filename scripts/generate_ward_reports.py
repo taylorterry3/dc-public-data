@@ -835,19 +835,23 @@ def generate_area_appendix(df, area_type, area_id):
 def generate_anc_appendix(df):
     """Generate appendix section for ANCs."""
     description = "\n\\newpage\n# Appendix 3: Data by ANC\n\n"
-    ancs = sorted(df["anc_id"].unique())
+    # Filter out empty strings, NaN values, and "Unknown" values
+    ancs = sorted(
+        anc
+        for anc in df["anc_id"].unique()
+        if pd.notna(anc) and anc and anc != "Unknown"
+    )
     for anc in ancs:
-        if anc:  # Skip empty strings
-            # Add a new page before each ANC section
-            description += f"\\newpage\n## ANC {anc}\n\n"
-            # Get ANC-specific data
-            anc_df = df[df["anc_id"] == anc]
-            categories = sorted(cat for cat in df["category"].unique() if pd.notna(cat))
-            table = generate_category_table(anc_df, categories)
-            description += table
-            # Sanitize the anc for the filename
-            sanitized_anc = str(anc).replace(" ", "_").replace("/", "-")
-            description += f"\n![](images/anc_{sanitized_anc}_categories.png)\n\n"
+        # Add a new page before each ANC section
+        description += f"\\newpage\n## ANC {anc}\n\n"
+        # Get ANC-specific data
+        anc_df = df[df["anc_id"] == anc]
+        categories = sorted(cat for cat in df["category"].unique() if pd.notna(cat))
+        table = generate_category_table(anc_df, categories)
+        description += table
+        # Sanitize the anc for the filename
+        sanitized_anc = str(anc).replace(" ", "_").replace("/", "-")
+        description += f"\n![](images/anc_{sanitized_anc}_categories.png)\n\n"
     return description
 
 
@@ -1007,6 +1011,10 @@ def create_plots(
 ) -> None:
     """Generate plots for citywide, ward, district, ANC, or PSA data."""
     if area_type and area_id:
+        # Skip NaN and "Unknown" values for ANC plots
+        if area_type == "anc" and (pd.isna(area_id) or area_id == "Unknown"):
+            return
+
         # Determine the correct column based on area type
         if area_type == "ward":
             area_col = "ward"
@@ -1084,8 +1092,11 @@ def preprocess_data(df):
 
     # Handle ANC IDs if the column exists
     if "anc_id" in df.columns:
-        df["anc_id"] = df["anc_id"].astype(str)
+        # First handle NaN values before converting to string
         df.loc[df["anc_id"].isna(), "anc_id"] = "Unknown"
+        # Then convert to string and handle any remaining "nan" strings
+        df["anc_id"] = df["anc_id"].astype(str)
+        df.loc[df["anc_id"].str.lower() == "nan", "anc_id"] = "Unknown"
 
     # Handle PSA values if the column exists
     if "arrest_psa" in df.columns:
@@ -1224,7 +1235,9 @@ def main():
     # Generate ANC plots
     print("Generating ANC plots...")
     for anc in sorted(df["anc_id"].unique()):
-        if anc:  # Skip empty strings
+        if (
+            pd.notna(anc) and anc and anc != "Unknown"
+        ):  # Skip NaN, empty strings, and "Unknown" values
             create_plots(df, "anc", anc, reports_dir, officers_df)
 
     # Generate PSA plots

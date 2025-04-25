@@ -2,9 +2,11 @@
 
 ## Background
 
-MPD recently made its annual public release of adult arrest data, covering 19,263 arrests in 2024. This data represents the first full year of data available since Chief Smith took office in November of 2023, and reveals major changes in policing strategy over that timeframe. This report begins with some aggregate data and analysis, and also includes appendices with tables and charts for each Ward, Police District, ANC, and PSA. 
+MPD recently made its annual public release of adult arrest data, covering 19,263 arrests in 2024. This data represents the first full year of data available since Chief Smith took office in November of 2023, and reveals major changes in policing strategy over that timeframe.
 
-This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. The code used to generate this report is also available in that repository. This version of the report was generated on April 11, 2025. This report, including any updated versions, is available in Google Drive at bit.ly/4iG0Uht.
+This brief report includes a few pages of analysis of trends citywide and by Ward, focused on changes from 2023 to 2024. The rest of the pages are a series of appendices with a tables and chart of arrest trends for each Ward, Police District, ANC, and PSA for those who want to see a more local view.
+
+This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. The code used to generate this report is also available in that repository. This version of the report was generated on April 25, 2025. This report, including any updated versions, is available in Google Drive at bit.ly/4iG0Uht.
 
 Taylor can be reached at taylor.terry@gmail.com.
 
@@ -2438,50 +2440,13 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 
 ![](images/anc_8F_categories.png)
 
-\newpage
-## ANC nan
-
-| Arrest Category | 2023 | 2024 | Change | % Change |
-|----------------|------:|------:|--------:|----------:|
-| Aggravated Assault | 0 | 0 | +0 | N/A |
-| Arson | 0 | 0 | +0 | N/A |
-| Assault on a Police Officer | 0 | 0 | +0 | N/A |
-| Assault with a Dangerous Weapon | 0 | 0 | +0 | N/A |
-| Burglary | 0 | 0 | +0 | N/A |
-| Damage to Property | 0 | 0 | +0 | N/A |
-| Disorderly Conduct | 0 | 0 | +0 | N/A |
-| Driving/Boating While Intoxicated | 0 | 0 | +0 | N/A |
-| Fraud and Financial Crimes | 0 | 0 | +0 | N/A |
-| Gambling | 0 | 0 | +0 | N/A |
-| Homicide | 0 | 0 | +0 | N/A |
-| Kidnapping | 0 | 0 | +0 | N/A |
-| Liquor Law Violations | 0 | 0 | +0 | N/A |
-| Motor Vehicle Theft | 0 | 0 | +0 | N/A |
-| Narcotics | 0 | 0 | +0 | N/A |
-| Offenses Against Family & Children | 0 | 0 | +0 | N/A |
-| Other Crimes | 0 | 0 | +0 | N/A |
-| Property Crimes | 0 | 0 | +0 | N/A |
-| Prostitution | 0 | 0 | +0 | N/A |
-| Release Violations/Fugitive | 0 | 0 | +0 | N/A |
-| Robbery | 0 | 0 | +0 | N/A |
-| Sex Abuse | 0 | 0 | +0 | N/A |
-| Sex Offenses | 0 | 0 | +0 | N/A |
-| Simple Assault | 0 | 0 | +0 | N/A |
-| Theft | 0 | 0 | +0 | N/A |
-| Theft from Auto | 0 | 0 | +0 | N/A |
-| Traffic Violations | 0 | 0 | +0 | N/A |
-| Vending Violations | 0 | 0 | +0 | N/A |
-| Weapon Violations | 0 | 0 | +0 | N/A |
-
-![](images/anc_nan_categories.png)
-
 
 
 \newpage
 # Appendix 4: Data by PSA
 
 \newpage
-## PSA 101.0
+## PSA 101
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2515,10 +2480,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_101.0_categories.png)
+![](images/psa_101_categories.png)
 
 \newpage
-## PSA 102.0
+## PSA 102
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2552,10 +2517,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_102.0_categories.png)
+![](images/psa_102_categories.png)
 
 \newpage
-## PSA 103.0
+## PSA 103
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2589,10 +2554,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_103.0_categories.png)
+![](images/psa_103_categories.png)
 
 \newpage
-## PSA 104.0
+## PSA 104
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2626,10 +2591,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Sex Abuse | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_104.0_categories.png)
+![](images/psa_104_categories.png)
 
 \newpage
-## PSA 105.0
+## PSA 105
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2663,10 +2628,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Kidnapping | 0 | 0 | +0 | N/A |
 | Theft from Auto | 0 | 1 | +1 | N/A |
 
-![](images/psa_105.0_categories.png)
+![](images/psa_105_categories.png)
 
 \newpage
-## PSA 106.0
+## PSA 106
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2700,10 +2665,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Sex Abuse | 0 | 2 | +2 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_106.0_categories.png)
+![](images/psa_106_categories.png)
 
 \newpage
-## PSA 107.0
+## PSA 107
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2737,10 +2702,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_107.0_categories.png)
+![](images/psa_107_categories.png)
 
 \newpage
-## PSA 108.0
+## PSA 108
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2774,10 +2739,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_108.0_categories.png)
+![](images/psa_108_categories.png)
 
 \newpage
-## PSA 201.0
+## PSA 201
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2811,10 +2776,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_201.0_categories.png)
+![](images/psa_201_categories.png)
 
 \newpage
-## PSA 202.0
+## PSA 202
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2848,10 +2813,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Traffic Violations | 0 | 5 | +5 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_202.0_categories.png)
+![](images/psa_202_categories.png)
 
 \newpage
-## PSA 203.0
+## PSA 203
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2885,10 +2850,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_203.0_categories.png)
+![](images/psa_203_categories.png)
 
 \newpage
-## PSA 204.0
+## PSA 204
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2922,10 +2887,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Prostitution | 0 | 0 | +0 | N/A |
 | Sex Abuse | 0 | 2 | +2 | N/A |
 
-![](images/psa_204.0_categories.png)
+![](images/psa_204_categories.png)
 
 \newpage
-## PSA 205.0
+## PSA 205
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2959,10 +2924,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Vending Violations | 0 | 0 | +0 | N/A |
 | Weapon Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_205.0_categories.png)
+![](images/psa_205_categories.png)
 
 \newpage
-## PSA 206.0
+## PSA 206
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -2996,10 +2961,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_206.0_categories.png)
+![](images/psa_206_categories.png)
 
 \newpage
-## PSA 207.0
+## PSA 207
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3033,10 +2998,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_207.0_categories.png)
+![](images/psa_207_categories.png)
 
 \newpage
-## PSA 208.0
+## PSA 208
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3070,10 +3035,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_208.0_categories.png)
+![](images/psa_208_categories.png)
 
 \newpage
-## PSA 209.0
+## PSA 209
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3107,10 +3072,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Sex Abuse | 0 | 0 | +0 | N/A |
 | Theft from Auto | 0 | 0 | +0 | N/A |
 
-![](images/psa_209.0_categories.png)
+![](images/psa_209_categories.png)
 
 \newpage
-## PSA 301.0
+## PSA 301
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3144,10 +3109,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_301.0_categories.png)
+![](images/psa_301_categories.png)
 
 \newpage
-## PSA 302.0
+## PSA 302
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3181,10 +3146,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_302.0_categories.png)
+![](images/psa_302_categories.png)
 
 \newpage
-## PSA 303.0
+## PSA 303
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3218,10 +3183,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_303.0_categories.png)
+![](images/psa_303_categories.png)
 
 \newpage
-## PSA 304.0
+## PSA 304
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3255,10 +3220,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 2 | +2 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_304.0_categories.png)
+![](images/psa_304_categories.png)
 
 \newpage
-## PSA 305.0
+## PSA 305
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3292,10 +3257,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Prostitution | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_305.0_categories.png)
+![](images/psa_305_categories.png)
 
 \newpage
-## PSA 306.0
+## PSA 306
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3329,10 +3294,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Sex Abuse | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_306.0_categories.png)
+![](images/psa_306_categories.png)
 
 \newpage
-## PSA 307.0
+## PSA 307
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3366,10 +3331,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Sex Offenses | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_307.0_categories.png)
+![](images/psa_307_categories.png)
 
 \newpage
-## PSA 308.0
+## PSA 308
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3403,10 +3368,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_308.0_categories.png)
+![](images/psa_308_categories.png)
 
 \newpage
-## PSA 401.0
+## PSA 401
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3440,10 +3405,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_401.0_categories.png)
+![](images/psa_401_categories.png)
 
 \newpage
-## PSA 402.0
+## PSA 402
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3477,10 +3442,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_402.0_categories.png)
+![](images/psa_402_categories.png)
 
 \newpage
-## PSA 403.0
+## PSA 403
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3514,10 +3479,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_403.0_categories.png)
+![](images/psa_403_categories.png)
 
 \newpage
-## PSA 404.0
+## PSA 404
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3551,10 +3516,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 2 | +2 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_404.0_categories.png)
+![](images/psa_404_categories.png)
 
 \newpage
-## PSA 405.0
+## PSA 405
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3588,10 +3553,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_405.0_categories.png)
+![](images/psa_405_categories.png)
 
 \newpage
-## PSA 406.0
+## PSA 406
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3625,10 +3590,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_406.0_categories.png)
+![](images/psa_406_categories.png)
 
 \newpage
-## PSA 407.0
+## PSA 407
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3662,10 +3627,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_407.0_categories.png)
+![](images/psa_407_categories.png)
 
 \newpage
-## PSA 408.0
+## PSA 408
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3699,10 +3664,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Sex Abuse | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_408.0_categories.png)
+![](images/psa_408_categories.png)
 
 \newpage
-## PSA 409.0
+## PSA 409
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3736,10 +3701,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 2 | +2 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_409.0_categories.png)
+![](images/psa_409_categories.png)
 
 \newpage
-## PSA 501.0
+## PSA 501
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3773,10 +3738,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Prostitution | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_501.0_categories.png)
+![](images/psa_501_categories.png)
 
 \newpage
-## PSA 502.0
+## PSA 502
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3810,10 +3775,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_502.0_categories.png)
+![](images/psa_502_categories.png)
 
 \newpage
-## PSA 503.0
+## PSA 503
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3847,10 +3812,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Prostitution | 0 | 0 | +0 | N/A |
 | Theft from Auto | 0 | 1 | +1 | N/A |
 
-![](images/psa_503.0_categories.png)
+![](images/psa_503_categories.png)
 
 \newpage
-## PSA 504.0
+## PSA 504
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3884,10 +3849,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_504.0_categories.png)
+![](images/psa_504_categories.png)
 
 \newpage
-## PSA 505.0
+## PSA 505
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3921,10 +3886,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_505.0_categories.png)
+![](images/psa_505_categories.png)
 
 \newpage
-## PSA 506.0
+## PSA 506
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3958,10 +3923,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Sex Abuse | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_506.0_categories.png)
+![](images/psa_506_categories.png)
 
 \newpage
-## PSA 507.0
+## PSA 507
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -3995,10 +3960,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_507.0_categories.png)
+![](images/psa_507_categories.png)
 
 \newpage
-## PSA 601.0
+## PSA 601
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4032,10 +3997,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_601.0_categories.png)
+![](images/psa_601_categories.png)
 
 \newpage
-## PSA 602.0
+## PSA 602
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4069,10 +4034,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_602.0_categories.png)
+![](images/psa_602_categories.png)
 
 \newpage
-## PSA 603.0
+## PSA 603
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4106,10 +4071,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_603.0_categories.png)
+![](images/psa_603_categories.png)
 
 \newpage
-## PSA 604.0
+## PSA 604
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4143,10 +4108,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_604.0_categories.png)
+![](images/psa_604_categories.png)
 
 \newpage
-## PSA 605.0
+## PSA 605
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4180,10 +4145,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_605.0_categories.png)
+![](images/psa_605_categories.png)
 
 \newpage
-## PSA 606.0
+## PSA 606
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4217,10 +4182,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_606.0_categories.png)
+![](images/psa_606_categories.png)
 
 \newpage
-## PSA 607.0
+## PSA 607
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4254,10 +4219,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_607.0_categories.png)
+![](images/psa_607_categories.png)
 
 \newpage
-## PSA 608.0
+## PSA 608
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4291,10 +4256,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 2 | +2 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_608.0_categories.png)
+![](images/psa_608_categories.png)
 
 \newpage
-## PSA 701.0
+## PSA 701
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4328,10 +4293,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_701.0_categories.png)
+![](images/psa_701_categories.png)
 
 \newpage
-## PSA 702.0
+## PSA 702
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4365,10 +4330,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_702.0_categories.png)
+![](images/psa_702_categories.png)
 
 \newpage
-## PSA 703.0
+## PSA 703
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4402,10 +4367,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_703.0_categories.png)
+![](images/psa_703_categories.png)
 
 \newpage
-## PSA 704.0
+## PSA 704
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4439,10 +4404,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_704.0_categories.png)
+![](images/psa_704_categories.png)
 
 \newpage
-## PSA 705.0
+## PSA 705
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4476,10 +4441,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_705.0_categories.png)
+![](images/psa_705_categories.png)
 
 \newpage
-## PSA 706.0
+## PSA 706
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4513,10 +4478,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_706.0_categories.png)
+![](images/psa_706_categories.png)
 
 \newpage
-## PSA 707.0
+## PSA 707
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4550,10 +4515,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 0 | +0 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_707.0_categories.png)
+![](images/psa_707_categories.png)
 
 \newpage
-## PSA 708.0
+## PSA 708
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4587,10 +4552,10 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Prostitution | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_708.0_categories.png)
+![](images/psa_708_categories.png)
 
 \newpage
-## PSA nan
+## PSA Unknown
 
 | Arrest Category | 2023 | 2024 | Change | % Change |
 |----------------|------:|------:|--------:|----------:|
@@ -4624,5 +4589,5 @@ This chart presents the same data as above in a visual format, sorted by arrest 
 | Theft from Auto | 0 | 1 | +1 | N/A |
 | Vending Violations | 0 | 0 | +0 | N/A |
 
-![](images/psa_nan_categories.png)
+![](images/psa_Unknown_categories.png)
 
