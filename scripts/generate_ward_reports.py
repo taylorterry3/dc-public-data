@@ -428,8 +428,13 @@ def generate_background_section(citywide_stats: dict) -> str:
     description += "## Background\n\n"
     description += f"MPD recently made its annual public release of adult arrest data, covering {citywide_stats['arrests_2024']:,} arrests in 2024. "
     description += "This data represents the first full year of data available since Chief Smith took office in November of 2023, "
-    description += "and reveals major changes in policing strategy over that timeframe. This report begins with some aggregate data and analysis, "
-    description += f"and also includes appendices with tables and charts for each Ward, Police District, ANC, and PSA. \n\n"
+    description += (
+        "and reveals major changes in policing strategy over that timeframe.\n\n"
+    )
+
+    description += "This brief report includes a few pages of analysis of trends citywide and by Ward, focused on changes from 2023 to 2024. "
+    description += "The rest of the pages are a series of appendices with a tables and chart of arrest trends for each Ward, Police District, ANC, and PSA "
+    description += "for those who want to see a more local view.\n\n"
 
     description += "This adult arrest data is taken from the Open Data DC website. DC resident and data scientist Taylor Terry "
     description += "maintains an archive of this and other DC public data at https://github.com/taylorterry3/dc-public-data. "
