@@ -7,14 +7,14 @@ import geopandas as gpd
 from shapely.geometry import Point
 
 
-STOP_DATA_OLD = pd.read_csv("data/raw/Stop_Data_2023.csv.gz", low_memory=False)
+STOP_DATA_OLD = pd.read_csv("data/raw/Stop_Data.csv.gz", low_memory=False)
 STOP_DATA_2023_2024 = pd.read_csv(
     "data/raw/Stop_Data_2023-2024.csv.gz", low_memory=False
 )
 
 ARREST_DATA = pd.read_csv("data/raw/Adult_Arrests.csv.gz", low_memory=False)
-ARREST_DATA_2023 = pd.read_csv("data/raw/Adult_Arrests_2023.csv", low_memory=False)
-ARREST_DATA_2024 = pd.read_excel("data/raw/2024AdultArrests_OpenData.xlsx")
+# ARREST_DATA_2023 = pd.read_csv("data/raw/Adult_Arrests_2023.csv", low_memory=False)
+# ARREST_DATA_2024 = pd.read_excel("data/raw/2024AdultArrests_OpenData.xlsx")
 
 INCIDENT_DATA = pd.concat(
     map(pd.read_csv, glob.glob("data/raw/Crime_Incidents*")), ignore_index=True
@@ -63,6 +63,15 @@ def data_cleanup(df: pd.DataFrame, date_col: str) -> pd.DataFrame:
     if "YEAR" not in df.columns:
         df["year"] = df.date.dt.year
     df.columns = [c.lower() for c in df.columns]
+
+    # Ensure PSA values are strings
+    if "arrest_psa" in df.columns:
+        df["arrest_psa"] = df["arrest_psa"].astype(str)
+        # Remove any decimal points and trailing zeros from numeric PSAs
+        df.loc[df["arrest_psa"].str.match(r"^\d+\.0$"), "arrest_psa"] = df.loc[
+            df["arrest_psa"].str.match(r"^\d+\.0$"), "arrest_psa"
+        ].str.replace(r"\.0$", "")
+
     return df
 
 
@@ -100,64 +109,70 @@ if __name__ == "__main__":
         "data/clean/stop_data.csv.gz", index=False, compression="gzip"
     )
 
-    ARREST_DATA_2023.columns = [
-        COLUMN_TRANSLATION_23_24[c] for c in ARREST_DATA_2023.columns
-    ]
-
-    ARREST_DATA_2024.columns = [
-        COLUMN_TRANSLATION_23_24[c] for c in ARREST_DATA_2024.columns
-    ]
-
-    ARREST_DATA_PRE_23 = data_cleanup(ARREST_DATA, "DATE_")
-
-    ARREST_DATA_2023 = data_cleanup(ARREST_DATA_2023, "DATE_")
-    ARREST_DATA_2024 = data_cleanup(ARREST_DATA_2024, "DATE_")
-
-    ARREST_DATA = pd.concat(
-        [ARREST_DATA_PRE_23, ARREST_DATA_2023, ARREST_DATA_2024], ignore_index=True
+    # Load arrest data with all columns as strings to prevent any float conversion
+    ARREST_DATA = pd.read_csv(
+        "data/raw/Adult_Arrests.csv.gz",
+        low_memory=False,
+        dtype=str,  # Load everything as string to prevent any float conversion
     )
+    ARREST_DATA = data_cleanup(ARREST_DATA, "DATE_")
     ARREST_DATA = arrest_category_cleanup(ARREST_DATA)
 
-    # Add ward information using spatial join
-    print("\nAdding ward information to arrest data...")
-
-    # Read the ward shapefile
+    # Read the ward, SMD, and PSA shapefiles
     wards = gpd.read_file("data/raw/Wards_from_2022.geojson")
+    smd = gpd.read_file("data/raw/Single_Member_District_from_2023.geojson")
 
     # Create geometry column for arrest points
     ARREST_DATA["geometry"] = ARREST_DATA.apply(
         lambda row: Point(row["arrest_longitude"], row["arrest_latitude"]), axis=1
     )
 
-    # Convert arrest data to GeoDataFrame
+    # Convert arrest data to GeoDataFrame and reset index
     arrest_gdf = gpd.GeoDataFrame(
-        ARREST_DATA, geometry="geometry", crs="EPSG:4326"  # WGS84 coordinate system
-    )
+        ARREST_DATA.copy(), geometry="geometry", crs="EPSG:4326"
+    ).reset_index(drop=True)
 
-    # Perform spatial join
+    # Perform spatial joins with reset_index after each operation
+    # Ward join
     ARREST_DATA = gpd.sjoin(
         arrest_gdf, wards[["WARD", "NAME", "geometry"]], how="left", predicate="within"
-    )
+    ).reset_index(drop=True)
+    ARREST_DATA = ARREST_DATA.drop(columns=["index_right"])
+
+    # SMD and ANC join
+    ARREST_DATA = gpd.sjoin(
+        gpd.GeoDataFrame(ARREST_DATA, geometry="geometry", crs="EPSG:4326").reset_index(
+            drop=True
+        ),
+        smd[["SMD_ID", "ANC_ID", "geometry"]],
+        how="left",
+        predicate="within",
+    ).reset_index(drop=True)
+    ARREST_DATA = ARREST_DATA.drop(columns=["index_right"])
 
     # Drop the geometry column
     ARREST_DATA = ARREST_DATA.drop(columns=["geometry"])
 
-    # Convert WARD to integer and remove rows with missing ward values
-    ARREST_DATA = ARREST_DATA.dropna(subset=["WARD"])
-    ARREST_DATA["WARD"] = ARREST_DATA["WARD"].astype(int)
+    # Lowercase all column names
+    ARREST_DATA.columns = [col.lower() for col in ARREST_DATA.columns]
 
-    # Remove rows with missing category values only if they're from before 2019
+    # Convert ward to integer and remove rows with missing ward values
+    ARREST_DATA = ARREST_DATA.dropna(subset=["ward"])
+    ARREST_DATA["ward"] = ARREST_DATA["ward"].astype(int)
+
     ARREST_DATA["year"] = ARREST_DATA["date"].dt.year
-    missing_categories_before_2019 = ARREST_DATA[
-        (ARREST_DATA["category"].isna()) & (ARREST_DATA["year"] < 2019)
-    ]
-    ARREST_DATA = ARREST_DATA.drop(missing_categories_before_2019.index)
 
-    # Print some stats to verify the join
+    # Print some stats to verify the joins
     print("\nArrests by ward:")
-    print(ARREST_DATA["WARD"].value_counts().sort_index())
+    print(ARREST_DATA["ward"].value_counts().sort_index())
     print("\nArrests with no ward (should be 0):")
-    print(ARREST_DATA["WARD"].isna().sum())
+    print(ARREST_DATA["ward"].isna().sum())
+    print("\nArrests with no SMD:")
+    print(ARREST_DATA["smd_id"].isna().sum())
+    print("\nArrests with no ANC:")
+    print(ARREST_DATA["anc_id"].isna().sum())
+    print("\nArrests with no PSA:")
+    print(ARREST_DATA["arrest_psa"].isna().sum())
     print("\nArrests with no category (should only be from 2019 onwards):")
     print(ARREST_DATA["category"].isna().sum())
     if ARREST_DATA["category"].isna().sum() > 0:
