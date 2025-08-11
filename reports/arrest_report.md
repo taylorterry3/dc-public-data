@@ -26,6 +26,8 @@ In 2024 MPD made 19,263 adult arrests citywide, a +27% change from 15,223 arrest
 | 7 | 2,798 | 4,017 | +1,219 | +44% |
 | 8 | 3,359 | 4,388 | +1,029 | +31% |
 
+\newpage
+
 Much of this increase in arrests was driven by 2,000 additional arrests for Traffic Violations, 868 more for Theft, 814 more for Narcotics, and 743 more for Liquor Law Violations. 
 
 | Arrest Category | 2023 | 2024 | Change | % Change |

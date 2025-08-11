@@ -581,6 +581,9 @@ def generate_overview_section(
         )
     description += "\n"
 
+    # Add page break before category text
+    description += "\\newpage\n\n"
+
     # Move the category text before the table
     category_changes = citywide_stats.get("category_changes_detail", {})
     category_text = []
