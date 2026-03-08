@@ -11,7 +11,7 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/", response_class=HTMLResponse)
 async def service_311_index(
     request: Request,
-    ward: int | None = None,
+    ward: str | None = None,
     year: int = data.CURRENT_YEAR,
 ):
     by_year = data.requests_by_year(ward)

@@ -10,7 +10,7 @@ THREE11 = "read_csv_auto('data/clean/311_data_part_*.csv.gz')"
 # 311 ward values are mixed strings ('1', '1.0') — normalize to integer
 _311_WARD = "TRY_CAST(TRY_CAST(ward AS DOUBLE) AS INTEGER)"
 
-WARDS = list(range(1, 9))
+WARDS = [str(w) for w in range(1, 9)]
 CURRENT_YEAR = 2024
 PREV_YEAR = 2023
 
@@ -24,7 +24,7 @@ def _geo_filter(geo_type: str | None, geo_id: str | None) -> str:
     if not geo_type or not geo_id:
         return ""
     if geo_type == "ward":
-        return f"AND ward = {int(geo_id)}"
+        return f"AND ward = {geo_id}"
     if geo_type == "anc":
         return f"AND anc_id = '{geo_id}'"
     if geo_type == "smd":
@@ -86,7 +86,7 @@ def arrests_yoy(geo_type=None, geo_id=None) -> list[dict]:
 
 def arrests_by_ward(year=CURRENT_YEAR) -> list[dict]:
     rows = _con().execute(f"""
-        SELECT ward, COUNT(*) AS arrests
+        SELECT CAST(ward AS VARCHAR) AS ward, COUNT(*) AS arrests
         FROM {ARRESTS}
         WHERE year = {year} AND ward IS NOT NULL
         GROUP BY ward ORDER BY ward
@@ -115,8 +115,8 @@ def available_smds(anc_id: str) -> list[str]:
 
 # ── Incidents ─────────────────────────────────────────────────────────────────
 
-def incidents_by_year(ward: int | None = None) -> list[dict]:
-    geo = f"AND ward = {ward}" if ward else ""
+def incidents_by_year(ward: str | None = None) -> list[dict]:
+    geo = f"AND CAST(ward AS INTEGER) = {ward}" if ward else ""
     rows = _con().execute(f"""
         SELECT year, COUNT(*) AS incidents
         FROM {INCIDENTS}
@@ -126,8 +126,8 @@ def incidents_by_year(ward: int | None = None) -> list[dict]:
     return [{"year": r[0], "incidents": r[1]} for r in rows]
 
 
-def incidents_by_offense(year=CURRENT_YEAR, ward: int | None = None) -> list[dict]:
-    geo = f"AND ward = {ward}" if ward else ""
+def incidents_by_offense(year=CURRENT_YEAR, ward: str | None = None) -> list[dict]:
+    geo = f"AND CAST(ward AS INTEGER) = {ward}" if ward else ""
     rows = _con().execute(f"""
         SELECT offense, COUNT(*) AS incidents
         FROM {INCIDENTS}
@@ -140,11 +140,11 @@ def incidents_by_offense(year=CURRENT_YEAR, ward: int | None = None) -> list[dic
 
 # ── 311 Service Requests ──────────────────────────────────────────────────────
 
-def _311_ward_filter(ward: int | None) -> str:
+def _311_ward_filter(ward: str | None) -> str:
     return f"AND {_311_WARD} = {ward}" if ward else ""
 
 
-def requests_by_year(ward: int | None = None) -> list[dict]:
+def requests_by_year(ward: str | None = None) -> list[dict]:
     geo = _311_ward_filter(ward)
     rows = _con().execute(f"""
         SELECT YEAR(ADDDATE) AS year, COUNT(*) AS requests
@@ -155,7 +155,7 @@ def requests_by_year(ward: int | None = None) -> list[dict]:
     return [{"year": r[0], "requests": r[1]} for r in rows]
 
 
-def requests_by_service(year=CURRENT_YEAR, ward: int | None = None) -> list[dict]:
+def requests_by_service(year=CURRENT_YEAR, ward: str | None = None) -> list[dict]:
     geo = _311_ward_filter(ward)
     rows = _con().execute(f"""
         SELECT SERVICECODEDESCRIPTION AS service, COUNT(*) AS requests
@@ -168,7 +168,7 @@ def requests_by_service(year=CURRENT_YEAR, ward: int | None = None) -> list[dict
     return [{"service": r[0], "requests": r[1]} for r in rows]
 
 
-def requests_by_agency(year=CURRENT_YEAR, ward: int | None = None) -> list[dict]:
+def requests_by_agency(year=CURRENT_YEAR, ward: str | None = None) -> list[dict]:
     geo = _311_ward_filter(ward)
     rows = _con().execute(f"""
         SELECT ORGANIZATIONACRONYM AS agency, COUNT(*) AS requests
@@ -183,7 +183,7 @@ def requests_by_agency(year=CURRENT_YEAR, ward: int | None = None) -> list[dict]
 
 def requests_by_ward(year=CURRENT_YEAR) -> list[dict]:
     rows = _con().execute(f"""
-        SELECT {_311_WARD} AS ward, COUNT(*) AS requests
+        SELECT CAST({_311_WARD} AS VARCHAR) AS ward, COUNT(*) AS requests
         FROM {THREE11}
         WHERE YEAR(ADDDATE) = {year}
           AND {_311_WARD} BETWEEN 1 AND 8
@@ -192,7 +192,7 @@ def requests_by_ward(year=CURRENT_YEAR) -> list[dict]:
     return [{"ward": r[0], "requests": r[1]} for r in rows]
 
 
-def requests_yoy(ward: int | None = None) -> list[dict]:
+def requests_yoy(ward: str | None = None) -> list[dict]:
     geo = _311_ward_filter(ward)
     rows = _con().execute(f"""
         WITH base AS (
@@ -218,7 +218,7 @@ def requests_yoy(ward: int | None = None) -> list[dict]:
     ]
 
 
-def requests_status_summary(year=CURRENT_YEAR, ward: int | None = None) -> list[dict]:
+def requests_status_summary(year=CURRENT_YEAR, ward: str | None = None) -> list[dict]:
     """Normalize the messy status variants into Closed / Open / Other."""
     geo = _311_ward_filter(ward)
     rows = _con().execute(f"""
