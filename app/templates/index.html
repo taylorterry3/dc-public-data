@@ -27,6 +27,16 @@
     </div>
     <a href="/incidents/" class="btn">Explore incidents →</a>
   </div>
+
+  <div class="card">
+    <h2>311 Service Requests</h2>
+    <div class="stat">{{ "{:,}".format(summary.req_curr) }}</div>
+    <div class="stat-label">{{ summary.current_year }} total</div>
+    <div class="stat-change {% if summary.req_pct > 0 %}up{% elif summary.req_pct < 0 %}down{% endif %}">
+      {% if summary.req_pct > 0 %}+{% endif %}{{ summary.req_pct }}% vs {{ summary.prev_year }}
+    </div>
+    <a href="/311/" class="btn">Explore 311 →</a>
+  </div>
 </section>
 
 <section class="about">

@@ -5,6 +5,10 @@ import duckdb
 ARRESTS = "read_csv_auto('data/clean/arrest_data.csv.gz')"
 INCIDENTS = "read_csv_auto('data/clean/incident_data_all.csv.gz')"
 STOPS = "read_csv_auto('data/clean/stop_data.csv.gz')"
+THREE11 = "read_csv_auto('data/clean/311_data_part_*.csv.gz')"
+
+# 311 ward values are mixed strings ('1', '1.0') — normalize to integer
+_311_WARD = "TRY_CAST(TRY_CAST(ward AS DOUBLE) AS INTEGER)"
 
 WARDS = list(range(1, 9))
 CURRENT_YEAR = 2024
@@ -134,6 +138,107 @@ def incidents_by_offense(year=CURRENT_YEAR, ward: int | None = None) -> list[dic
     return [{"offense": r[0], "incidents": r[1]} for r in rows]
 
 
+# ── 311 Service Requests ──────────────────────────────────────────────────────
+
+def _311_ward_filter(ward: int | None) -> str:
+    return f"AND {_311_WARD} = {ward}" if ward else ""
+
+
+def requests_by_year(ward: int | None = None) -> list[dict]:
+    geo = _311_ward_filter(ward)
+    rows = _con().execute(f"""
+        SELECT YEAR(ADDDATE) AS year, COUNT(*) AS requests
+        FROM {THREE11}
+        WHERE ADDDATE IS NOT NULL {geo}
+        GROUP BY year ORDER BY year
+    """).fetchall()
+    return [{"year": r[0], "requests": r[1]} for r in rows]
+
+
+def requests_by_service(year=CURRENT_YEAR, ward: int | None = None) -> list[dict]:
+    geo = _311_ward_filter(ward)
+    rows = _con().execute(f"""
+        SELECT SERVICECODEDESCRIPTION AS service, COUNT(*) AS requests
+        FROM {THREE11}
+        WHERE YEAR(ADDDATE) = {year}
+          AND SERVICECODEDESCRIPTION IS NOT NULL {geo}
+        GROUP BY service ORDER BY requests DESC
+        LIMIT 15
+    """).fetchall()
+    return [{"service": r[0], "requests": r[1]} for r in rows]
+
+
+def requests_by_agency(year=CURRENT_YEAR, ward: int | None = None) -> list[dict]:
+    geo = _311_ward_filter(ward)
+    rows = _con().execute(f"""
+        SELECT ORGANIZATIONACRONYM AS agency, COUNT(*) AS requests
+        FROM {THREE11}
+        WHERE YEAR(ADDDATE) = {year}
+          AND ORGANIZATIONACRONYM IS NOT NULL {geo}
+        GROUP BY agency ORDER BY requests DESC
+        LIMIT 10
+    """).fetchall()
+    return [{"agency": r[0], "requests": r[1]} for r in rows]
+
+
+def requests_by_ward(year=CURRENT_YEAR) -> list[dict]:
+    rows = _con().execute(f"""
+        SELECT {_311_WARD} AS ward, COUNT(*) AS requests
+        FROM {THREE11}
+        WHERE YEAR(ADDDATE) = {year}
+          AND {_311_WARD} BETWEEN 1 AND 8
+        GROUP BY ward ORDER BY ward
+    """).fetchall()
+    return [{"ward": r[0], "requests": r[1]} for r in rows]
+
+
+def requests_yoy(ward: int | None = None) -> list[dict]:
+    geo = _311_ward_filter(ward)
+    rows = _con().execute(f"""
+        WITH base AS (
+            SELECT SERVICECODEDESCRIPTION AS service,
+                COUNT(*) FILTER (WHERE YEAR(ADDDATE) = {PREV_YEAR}) AS prev,
+                COUNT(*) FILTER (WHERE YEAR(ADDDATE) = {CURRENT_YEAR}) AS curr
+            FROM {THREE11}
+            WHERE YEAR(ADDDATE) IN ({PREV_YEAR}, {CURRENT_YEAR})
+              AND SERVICECODEDESCRIPTION IS NOT NULL {geo}
+            GROUP BY service
+        )
+        SELECT service, prev, curr,
+               curr - prev AS change,
+               ROUND(100.0 * (curr - prev) / NULLIF(prev, 0), 1) AS pct_change
+        FROM base
+        WHERE prev > 0 OR curr > 0
+        ORDER BY curr DESC
+        LIMIT 20
+    """).fetchall()
+    return [
+        {"service": r[0], "prev": r[1], "curr": r[2], "change": r[3], "pct_change": r[4]}
+        for r in rows
+    ]
+
+
+def requests_status_summary(year=CURRENT_YEAR, ward: int | None = None) -> list[dict]:
+    """Normalize the messy status variants into Closed / Open / Other."""
+    geo = _311_ward_filter(ward)
+    rows = _con().execute(f"""
+        SELECT
+            CASE
+                WHEN UPPER(SERVICEORDERSTATUS) LIKE 'CLOSED%' THEN 'Closed'
+                WHEN UPPER(SERVICEORDERSTATUS) LIKE 'OPEN%'   THEN 'Open'
+                WHEN UPPER(SERVICEORDERSTATUS) LIKE 'IN-PROG%'
+                  OR UPPER(SERVICEORDERSTATUS) LIKE 'IN PROG%' THEN 'In Progress'
+                WHEN UPPER(SERVICEORDERSTATUS) LIKE 'CANCEL%' THEN 'Canceled'
+                ELSE 'Other'
+            END AS status,
+            COUNT(*) AS requests
+        FROM {THREE11}
+        WHERE YEAR(ADDDATE) = {year} {geo}
+        GROUP BY status ORDER BY requests DESC
+    """).fetchall()
+    return [{"status": r[0], "requests": r[1]} for r in rows]
+
+
 # ── Summary stats for front page ──────────────────────────────────────────────
 
 def citywide_summary() -> dict:
@@ -142,6 +247,8 @@ def citywide_summary() -> dict:
     arrests_prev = con.execute(f"SELECT COUNT(*) FROM {ARRESTS} WHERE year = {PREV_YEAR}").fetchone()[0]
     incidents_curr = con.execute(f"SELECT COUNT(*) FROM {INCIDENTS} WHERE year = {CURRENT_YEAR}").fetchone()[0]
     incidents_prev = con.execute(f"SELECT COUNT(*) FROM {INCIDENTS} WHERE year = {PREV_YEAR}").fetchone()[0]
+    req_curr = con.execute(f"SELECT COUNT(*) FROM {THREE11} WHERE YEAR(ADDDATE) = {CURRENT_YEAR}").fetchone()[0]
+    req_prev = con.execute(f"SELECT COUNT(*) FROM {THREE11} WHERE YEAR(ADDDATE) = {PREV_YEAR}").fetchone()[0]
 
     def pct(curr, prev):
         return round(100 * (curr - prev) / prev, 1) if prev else 0
@@ -153,6 +260,9 @@ def citywide_summary() -> dict:
         "incidents_curr": incidents_curr,
         "incidents_prev": incidents_prev,
         "incidents_pct": pct(incidents_curr, incidents_prev),
+        "req_curr": req_curr,
+        "req_prev": req_prev,
+        "req_pct": pct(req_curr, req_prev),
         "current_year": CURRENT_YEAR,
         "prev_year": PREV_YEAR,
     }
