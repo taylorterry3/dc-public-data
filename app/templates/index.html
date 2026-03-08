@@ -37,6 +37,16 @@
     </div>
     <a href="/311/" class="btn">Explore 311 →</a>
   </div>
+
+  <div class="card">
+    <h2>Police Stops</h2>
+    <div class="stat">{{ "{:,}".format(summary.stops_curr) }}</div>
+    <div class="stat-label">{{ summary.stops_year }} total</div>
+    <div class="stat-change {% if summary.stops_pct > 0 %}up{% elif summary.stops_pct < 0 %}down{% endif %}">
+      {% if summary.stops_pct > 0 %}+{% endif %}{{ summary.stops_pct }}% vs {{ summary.prev_year }}
+    </div>
+    <a href="/stops/" class="btn">Explore stops →</a>
+  </div>
 </section>
 
 <section class="about">

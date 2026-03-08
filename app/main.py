@@ -4,13 +4,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app import data
-from app.routers import arrests, incidents, service_311
+from app.routers import arrests, incidents, service_311, stops
 
 app = FastAPI(title="DC Public Data")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(arrests.router)
 app.include_router(incidents.router)
 app.include_router(service_311.router)
+app.include_router(stops.router)
 
 templates = Jinja2Templates(directory="app/templates")
 

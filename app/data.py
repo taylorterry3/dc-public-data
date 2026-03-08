@@ -10,6 +10,12 @@ THREE11 = "read_csv_auto('data/clean/311_data_part_*.csv.gz')"
 # 311 ward values are mixed strings ('1', '1.0') — normalize to integer
 _311_WARD = "TRY_CAST(TRY_CAST(ward AS DOUBLE) AS INTEGER)"
 
+# Stop district values are mixed: '7D' (newer data) and '7' (older) — normalize to 'NND' format
+_STOP_DISTRICT = "CASE WHEN stop_district LIKE '%D' THEN stop_district ELSE stop_district || 'D' END"
+
+DISTRICTS = ['1D', '2D', '3D', '4D', '5D', '6D', '7D']
+STOPS_CURRENT_YEAR = 2024  # most recent complete year in stops data
+
 WARDS = [str(w) for w in range(1, 9)]
 CURRENT_YEAR = 2024
 PREV_YEAR = 2023
@@ -239,6 +245,112 @@ def requests_status_summary(year=CURRENT_YEAR, ward: str | None = None) -> list[
     return [{"status": r[0], "requests": r[1]} for r in rows]
 
 
+# ── Police Stops ──────────────────────────────────────────────────────────────
+
+def _stop_district_filter(district: str | None) -> str:
+    return f"AND {_STOP_DISTRICT} = '{district}'" if district else ""
+
+
+def stops_by_year(district: str | None = None) -> list[dict]:
+    geo = _stop_district_filter(district)
+    rows = _con().execute(f"""
+        SELECT year, COUNT(*) AS stops
+        FROM {STOPS}
+        WHERE year IS NOT NULL {geo}
+        GROUP BY year ORDER BY year
+    """).fetchall()
+    return [{"year": r[0], "stops": r[1]} for r in rows]
+
+
+def stops_by_district(year=STOPS_CURRENT_YEAR) -> list[dict]:
+    rows = _con().execute(f"""
+        SELECT {_STOP_DISTRICT} AS district, COUNT(*) AS stops
+        FROM {STOPS}
+        WHERE year = {year}
+        GROUP BY district ORDER BY district
+    """).fetchall()
+    return [{"district": r[0], "stops": r[1]} for r in rows]
+
+
+def stops_by_type(year=STOPS_CURRENT_YEAR, district: str | None = None) -> list[dict]:
+    geo = _stop_district_filter(district)
+    rows = _con().execute(f"""
+        SELECT stop_type, COUNT(*) AS stops
+        FROM {STOPS}
+        WHERE year = {year} AND stop_type IS NOT NULL {geo}
+        GROUP BY stop_type ORDER BY stops DESC
+    """).fetchall()
+    return [{"stop_type": r[0], "stops": r[1]} for r in rows]
+
+
+def stops_by_ethnicity(year=STOPS_CURRENT_YEAR, district: str | None = None) -> list[dict]:
+    geo = _stop_district_filter(district)
+    rows = _con().execute(f"""
+        SELECT ethnicity, COUNT(*) AS stops
+        FROM {STOPS}
+        WHERE year = {year} AND ethnicity IS NOT NULL {geo}
+        GROUP BY ethnicity ORDER BY stops DESC
+    """).fetchall()
+    return [{"ethnicity": r[0], "stops": r[1]} for r in rows]
+
+
+def stops_by_gender(year=STOPS_CURRENT_YEAR, district: str | None = None) -> list[dict]:
+    geo = _stop_district_filter(district)
+    rows = _con().execute(f"""
+        SELECT gender, COUNT(*) AS stops
+        FROM {STOPS}
+        WHERE year = {year} AND gender IS NOT NULL {geo}
+        GROUP BY gender ORDER BY stops DESC
+    """).fetchall()
+    return [{"gender": r[0], "stops": r[1]} for r in rows]
+
+
+def stops_search_summary(year=STOPS_CURRENT_YEAR, district: str | None = None) -> dict:
+    """Return counts of stops, searches, and arrests for the given filters."""
+    geo = _stop_district_filter(district)
+    row = _con().execute(f"""
+        SELECT
+            COUNT(*) AS total,
+            SUM(CASE WHEN person_search_prob_cause = 1
+                       OR person_search_consent = 1
+                       OR person_search_warrant = 1 THEN 1 ELSE 0 END) AS searched,
+            SUM(CASE WHEN traffic_arrest = 1 THEN 1 ELSE 0 END) AS arrested
+        FROM {STOPS}
+        WHERE year = {year} {geo}
+    """).fetchone()
+    total, searched, arrested = row
+    return {
+        "total": total,
+        "searched": searched,
+        "arrested": arrested,
+        "search_rate": round(100 * searched / total, 1) if total else 0,
+        "arrest_rate": round(100 * arrested / total, 1) if total else 0,
+    }
+
+
+def stops_search_by_ethnicity(year=STOPS_CURRENT_YEAR, district: str | None = None) -> list[dict]:
+    """Search rate broken down by ethnicity."""
+    geo = _stop_district_filter(district)
+    rows = _con().execute(f"""
+        SELECT
+            ethnicity,
+            COUNT(*) AS stops,
+            SUM(CASE WHEN person_search_prob_cause = 1
+                       OR person_search_consent = 1
+                       OR person_search_warrant = 1 THEN 1 ELSE 0 END) AS searched,
+            ROUND(100.0 * SUM(CASE WHEN person_search_prob_cause = 1
+                                     OR person_search_consent = 1
+                                     OR person_search_warrant = 1 THEN 1 ELSE 0 END)
+                  / NULLIF(COUNT(*), 0), 1) AS search_rate
+        FROM {STOPS}
+        WHERE year = {year} AND ethnicity IS NOT NULL {geo}
+        GROUP BY ethnicity
+        HAVING COUNT(*) >= 50
+        ORDER BY stops DESC
+    """).fetchall()
+    return [{"ethnicity": r[0], "stops": r[1], "searched": r[2], "search_rate": r[3]} for r in rows]
+
+
 # ── Summary stats for front page ──────────────────────────────────────────────
 
 def citywide_summary() -> dict:
@@ -249,6 +361,8 @@ def citywide_summary() -> dict:
     incidents_prev = con.execute(f"SELECT COUNT(*) FROM {INCIDENTS} WHERE year = {PREV_YEAR}").fetchone()[0]
     req_curr = con.execute(f"SELECT COUNT(*) FROM {THREE11} WHERE YEAR(ADDDATE) = {CURRENT_YEAR}").fetchone()[0]
     req_prev = con.execute(f"SELECT COUNT(*) FROM {THREE11} WHERE YEAR(ADDDATE) = {PREV_YEAR}").fetchone()[0]
+    stops_curr = con.execute(f"SELECT COUNT(*) FROM {STOPS} WHERE year = {STOPS_CURRENT_YEAR}").fetchone()[0]
+    stops_prev = con.execute(f"SELECT COUNT(*) FROM {STOPS} WHERE year = {PREV_YEAR}").fetchone()[0]
 
     def pct(curr, prev):
         return round(100 * (curr - prev) / prev, 1) if prev else 0
@@ -263,6 +377,10 @@ def citywide_summary() -> dict:
         "req_curr": req_curr,
         "req_prev": req_prev,
         "req_pct": pct(req_curr, req_prev),
+        "stops_curr": stops_curr,
+        "stops_prev": stops_prev,
+        "stops_pct": pct(stops_curr, stops_prev),
+        "stops_year": STOPS_CURRENT_YEAR,
         "current_year": CURRENT_YEAR,
         "prev_year": PREV_YEAR,
     }
