@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Arrests — {{ geo_label }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Adult Arrests — {{ geo_label }}</h1>
+
+  <form class="geo-filter" method="get" action="/arrests/">
+    <label>Ward:
+      <select name="geo_id" onchange="this.form.elements['geo_type'].value='ward'; this.form.submit()">
+        <option value="">All wards</option>
+        {% for w in wards %}
+        <option value="{{ w }}" {% if geo_type == 'ward' and geo_id == w|string %}selected{% endif %}>Ward {{ w }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>ANC:
+      <select name="geo_id" onchange="this.form.elements['geo_type'].value='anc'; this.form.submit()">
+        <option value="">All ANCs</option>
+        {% for anc in ancs %}
+        <option value="{{ anc }}" {% if geo_type == 'anc' and geo_id == anc %}selected{% endif %}>ANC {{ anc }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <input type="hidden" name="geo_type" value="{{ geo_type or '' }}">
+    {% if geo_type or geo_id %}
+    <a href="/arrests/" class="btn-secondary">Clear filter</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="charts-grid">
+  <div class="chart-card wide">
+    <h2>Arrests by Year</h2>
+    <div id="chart-by-year"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>Top Categories — {{ current_year }}</h2>
+    <div id="chart-by-category"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>{{ prev_year }} vs {{ current_year }} by Category</h2>
+    <div id="chart-yoy"></div>
+  </div>
+
+  {% if not geo_type %}
+  <div class="chart-card wide">
+    <h2>Arrests by Ward — {{ current_year }}</h2>
+    <div id="chart-by-ward"></div>
+  </div>
+  {% endif %}
+</div>
+
+<section class="data-table">
+  <h2>{{ prev_year }} vs {{ current_year }} Breakdown</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>{{ prev_year }}</th>
+        <th>{{ current_year }}</th>
+        <th>Change</th>
+        <th>% Change</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in yoy %}
+      <tr>
+        <td>{{ row.category }}</td>
+        <td>{{ "{:,}".format(row.prev) }}</td>
+        <td>{{ "{:,}".format(row.curr) }}</td>
+        <td class="{% if row.change > 0 %}up{% elif row.change < 0 %}down{% endif %}">
+          {% if row.change > 0 %}+{% endif %}{{ "{:,}".format(row.change) }}
+        </td>
+        <td class="{% if row.pct_change and row.pct_change > 0 %}up{% elif row.pct_change and row.pct_change < 0 %}down{% endif %}">
+          {% if row.pct_change %}
+            {% if row.pct_change > 0 %}+{% endif %}{{ row.pct_change }}%
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<script>
+const byYear = {{ by_year | tojson }};
+const byCategory = {{ by_category | tojson }};
+const yoy = {{ yoy | tojson }};
+const byWard = {{ by_ward | tojson }};
+
+Plotly.newPlot('chart-by-year', [{
+  x: byYear.map(d => d.year),
+  y: byYear.map(d => d.arrests),
+  type: 'bar',
+  marker: { color: '#2563eb' }
+}], {
+  margin: { t: 10, r: 10, b: 40, l: 50 },
+  xaxis: { title: '' },
+  yaxis: { title: 'Arrests' },
+  paper_bgcolor: 'transparent',
+  plot_bgcolor: 'transparent'
+});
+
+Plotly.newPlot('chart-by-category', [{
+  x: byCategory.map(d => d.arrests),
+  y: byCategory.map(d => d.category),
+  type: 'bar',
+  orientation: 'h',
+  marker: { color: '#7c3aed' }
+}], {
+  margin: { t: 10, r: 20, b: 40, l: 180 },
+  xaxis: { title: 'Arrests' },
+  yaxis: { automargin: true },
+  paper_bgcolor: 'transparent',
+  plot_bgcolor: 'transparent'
+});
+
+Plotly.newPlot('chart-yoy', [
+  { name: '{{ prev_year }}', x: yoy.map(d => d.prev), y: yoy.map(d => d.category), type: 'bar', orientation: 'h', marker: { color: '#9ca3af' } },
+  { name: '{{ current_year }}', x: yoy.map(d => d.curr), y: yoy.map(d => d.category), type: 'bar', orientation: 'h', marker: { color: '#2563eb' } }
+], {
+  barmode: 'group',
+  margin: { t: 10, r: 20, b: 40, l: 180 },
+  xaxis: { title: 'Arrests' },
+  yaxis: { automargin: true },
+  paper_bgcolor: 'transparent',
+  plot_bgcolor: 'transparent'
+});
+
+{% if not geo_type %}
+Plotly.newPlot('chart-by-ward', [{
+  x: byWard.map(d => 'Ward ' + d.ward),
+  y: byWard.map(d => d.arrests),
+  type: 'bar',
+  marker: { color: '#059669' }
+}], {
+  margin: { t: 10, r: 10, b: 40, l: 60 },
+  xaxis: { title: '' },
+  yaxis: { title: 'Arrests' },
+  paper_bgcolor: 'transparent',
+  plot_bgcolor: 'transparent'
+});
+{% endif %}
+</script>
+{% endblock %}

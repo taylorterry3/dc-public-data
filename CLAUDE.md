@@ -22,6 +22,25 @@ The repo is being actively developed toward three goals:
 
 A primarily Python backend is preferred. BigQuery is attractive for making datasets publicly accessible independent of the website. No final decision has been made — evaluate tradeoffs when beginning the site build.
 
+## Web Application
+
+The site is built with **FastAPI + DuckDB + Plotly + Leaflet**. DuckDB queries the gzip CSVs in `data/clean/` directly — no separate database setup needed. Charts are rendered client-side via the Plotly JS CDN.
+
+```
+app/
+├── main.py          # FastAPI app, mounts routers and static files
+├── data.py          # All DuckDB queries (import this for new data access)
+├── routers/         # One file per data topic (arrests.py, incidents.py, ...)
+├── templates/       # Jinja2 HTML templates
+│   ├── base.html    # Nav, CDN imports, footer
+│   ├── index.html   # Front page
+│   ├── arrests/
+│   └── incidents/
+└── static/css/style.css
+```
+
+To add a new data topic: add queries to `data.py`, create `routers/<topic>.py`, add templates under `templates/<topic>/`, and register the router in `main.py`.
+
 ## Environment
 
 The project uses [uv](https://docs.astral.sh/uv/) for package and environment management on Python 3.14. `pyproject.toml` is the source of truth for dependencies — do not edit `requirements.txt` (kept only as a historical reference). Add new dependencies with `uv add <package>`.
@@ -56,6 +75,9 @@ uv run pytest tests/unit/test_data_completeness.py::test_years_completeness
 
 # Lint
 uv run ruff check scripts/ tests/
+
+# Run the dev web server (auto-reloads on file changes)
+uv run uvicorn app.main:app --reload --port 8000
 
 # Add a new dependency
 uv add <package>

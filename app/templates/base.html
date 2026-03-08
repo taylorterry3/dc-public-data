@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}DC Public Data{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.plot.ly/plotly-3.0.0.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="/" class="site-title">DC Public Data</a>
+      <ul>
+        <li><a href="/arrests/">Arrests</a></li>
+        <li><a href="/incidents/">Crime Incidents</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>Data sourced from <a href="https://opendata.dc.gov" target="_blank">DC Open Data</a> and the <a href="https://mpdc.dc.gov" target="_blank">Metropolitan Police Department</a>.</p>
+  </footer>
+</body>
+</html>
