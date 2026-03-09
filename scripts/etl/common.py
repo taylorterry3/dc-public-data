@@ -20,6 +20,32 @@ def data_cleanup(df: pd.DataFrame, date_col: str) -> pd.DataFrame:
     return df
 
 
+def normalize_ward(series: pd.Series) -> pd.Series:
+    """Normalize ward to a clean string '1'-'8', handling floats and None."""
+    return (
+        series
+        .astype(str)
+        .str.replace(r"\.0$", "", regex=True)
+        .str.strip()
+        .where(series.notna(), other=None)
+    )
+
+
+def normalize_district(series: pd.Series) -> pd.Series:
+    """Normalize police district to 'ND' string format ('1D'-'7D').
+
+    Handles numeric floats (1.0 → '1D') and bare integers ('1' → '1D').
+    Values already in 'ND' format are left unchanged.
+    """
+    def _fmt(val):
+        if pd.isna(val):
+            return None
+        s = str(val).strip().replace(".0", "")
+        return s if s.endswith("D") else s + "D"
+
+    return series.apply(_fmt)
+
+
 def arrest_category_cleanup(df: pd.DataFrame) -> pd.DataFrame:
     """Fix corrupted category strings in pre-2017 arrest data.
 

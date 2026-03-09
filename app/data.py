@@ -7,10 +7,11 @@ INCIDENTS = "read_csv_auto('data/clean/incident_data_all.csv.gz')"
 STOPS = "read_csv_auto('data/clean/stop_data.csv.gz')"
 THREE11 = "read_csv_auto('data/clean/311_data_part_*.csv.gz')"
 
-# 311 ward values are mixed strings ('1', '1.0') — normalize to integer
-_311_WARD = "TRY_CAST(TRY_CAST(ward AS DOUBLE) AS INTEGER)"
-
-# Stop district values are mixed: '7D' (newer data) and '7' (older) — normalize to 'NND' format
+# Normalization expressions handle both dirty existing files and clean post-ETL files.
+# After ETL re-run these will be no-ops.
+_311_WARD = "TRY_CAST(TRY_CAST(ward AS DOUBLE) AS INTEGER)::VARCHAR"
+_INCIDENT_WARD = "TRY_CAST(ward AS INTEGER)::VARCHAR"
+_INCIDENT_DISTRICT = "CASE WHEN district IS NULL THEN NULL WHEN CAST(district AS VARCHAR) LIKE '%D' THEN CAST(district AS VARCHAR) ELSE CAST(TRY_CAST(district AS INTEGER) AS VARCHAR) || 'D' END"
 _STOP_DISTRICT = "CASE WHEN stop_district LIKE '%D' THEN stop_district ELSE stop_district || 'D' END"
 
 DISTRICTS = ['1D', '2D', '3D', '4D', '5D', '6D', '7D']
@@ -122,7 +123,7 @@ def available_smds(anc_id: str) -> list[str]:
 # ── Incidents ─────────────────────────────────────────────────────────────────
 
 def incidents_by_year(ward: str | None = None) -> list[dict]:
-    geo = f"AND CAST(ward AS INTEGER) = {ward}" if ward else ""
+    geo = f"AND {_INCIDENT_WARD} = '{ward}'" if ward else ""
     rows = _con().execute(f"""
         SELECT year, COUNT(*) AS incidents
         FROM {INCIDENTS}
@@ -133,7 +134,7 @@ def incidents_by_year(ward: str | None = None) -> list[dict]:
 
 
 def incidents_by_offense(year=CURRENT_YEAR, ward: str | None = None) -> list[dict]:
-    geo = f"AND CAST(ward AS INTEGER) = {ward}" if ward else ""
+    geo = f"AND {_INCIDENT_WARD} = '{ward}'" if ward else ""
     rows = _con().execute(f"""
         SELECT offense, COUNT(*) AS incidents
         FROM {INCIDENTS}
@@ -147,7 +148,7 @@ def incidents_by_offense(year=CURRENT_YEAR, ward: str | None = None) -> list[dic
 # ── 311 Service Requests ──────────────────────────────────────────────────────
 
 def _311_ward_filter(ward: str | None) -> str:
-    return f"AND {_311_WARD} = {ward}" if ward else ""
+    return f"AND {_311_WARD} = '{ward}'" if ward else ""
 
 
 def requests_by_year(ward: str | None = None) -> list[dict]:
@@ -189,10 +190,10 @@ def requests_by_agency(year=CURRENT_YEAR, ward: str | None = None) -> list[dict]
 
 def requests_by_ward(year=CURRENT_YEAR) -> list[dict]:
     rows = _con().execute(f"""
-        SELECT CAST({_311_WARD} AS VARCHAR) AS ward, COUNT(*) AS requests
+        SELECT TRY_CAST(TRY_CAST(ward AS DOUBLE) AS INTEGER)::VARCHAR AS ward, COUNT(*) AS requests
         FROM {THREE11}
         WHERE YEAR(ADDDATE) = {year}
-          AND {_311_WARD} BETWEEN 1 AND 8
+          AND TRY_CAST(TRY_CAST(ward AS DOUBLE) AS INTEGER) BETWEEN 1 AND 8
         GROUP BY ward ORDER BY ward
     """).fetchall()
     return [{"ward": r[0], "requests": r[1]} for r in rows]

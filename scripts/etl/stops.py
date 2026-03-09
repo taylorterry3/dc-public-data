@@ -3,7 +3,7 @@
 import pandas as pd
 from pathlib import Path
 
-from scripts.etl.common import data_cleanup
+from scripts.etl.common import data_cleanup, normalize_district
 
 RAW_STOPS_OLD = Path("data/raw/Stop_Data.csv.gz")
 RAW_STOPS_2023_2025 = Path("data/raw/Stop_Data_2023-2025.csv.gz")
@@ -30,6 +30,8 @@ def run(
     df = load_raw(old_path, new_path)
     df = data_cleanup(df, "DATETIME")
     df = df.drop_duplicates(subset="ccn_anonymized")
+    if "stop_district" in df.columns:
+        df["stop_district"] = normalize_district(df["stop_district"])
 
     print(f"Stop records after dedup: {len(df):,}")
 

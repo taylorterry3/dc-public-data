@@ -4,7 +4,7 @@ import glob
 import pandas as pd
 from pathlib import Path
 
-from scripts.etl.common import data_cleanup
+from scripts.etl.common import data_cleanup, normalize_district, normalize_ward
 
 RAW_INCIDENTS_GLOB = "data/raw/Crime_Incidents*"
 RAW_INCIDENTS_ALL = Path("data/raw/dc-crimes-search-results.csv")
@@ -32,7 +32,16 @@ def run(
     Returns (incidents_df, incidents_all_df). Pass None for either output path to skip writing.
     """
     incidents = data_cleanup(load_raw_annual(), "START_DATE")
+    if "ward" in incidents.columns:
+        incidents["ward"] = normalize_ward(incidents["ward"])
+    if "district" in incidents.columns:
+        incidents["district"] = normalize_district(incidents["district"])
+
     incidents_all = data_cleanup(load_raw_all(), "START_DATE")
+    if "ward" in incidents_all.columns:
+        incidents_all["ward"] = normalize_ward(incidents_all["ward"])
+    if "district" in incidents_all.columns:
+        incidents_all["district"] = normalize_district(incidents_all["district"])
 
     print(f"Annual incident records: {len(incidents):,}")
     print(f"All-time incident records: {len(incidents_all):,}")
