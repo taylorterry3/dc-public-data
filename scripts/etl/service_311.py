@@ -1,7 +1,6 @@
 """ETL pipeline for DC 311 city service requests."""
 
 import glob
-import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -26,7 +25,8 @@ def run(output_template: str = CLEAN_311_TEMPLATE, num_parts: int = NUM_PARTS) -
     print(f"311 records: {len(df):,}")
 
     if output_template is not None:
-        for idx, chunk in enumerate(np.array_split(df, num_parts)):
+        size = len(df) // num_parts + 1
+        for idx, chunk in enumerate(df.iloc[i * size:(i + 1) * size] for i in range(num_parts)):
             path = output_template.format(idx)
             chunk.to_csv(path, index=False, compression="gzip")
             print(f"Wrote part {idx} ({len(chunk):,} rows) to {path}")
