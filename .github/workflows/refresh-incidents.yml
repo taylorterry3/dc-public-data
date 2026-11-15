@@ -1,0 +1,126 @@
+name: Refresh annual crime incidents
+
+on:
+  schedule:
+    # One slot applies in EDT, the other in EST. The gate selects the intended
+    # slot rather than testing the actual start hour (Actions can start late).
+    - cron: '0 13 * * *'
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    inputs:
+      full_history:
+        description: 'Download all accepted historical years as well as recent years'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: annual-incident-refresh
+  cancel-in-progress: false
+
+jobs:
+  schedule:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+      month: ${{ steps.gate.outputs.month }}
+    steps:
+      - id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          now = datetime.now(ZoneInfo('America/New_York'))
+          slot = '0 13 * * *' if now.utcoffset().total_seconds() == -14400 else '0 14 * * *'
+          run = os.environ['EVENT_NAME'] == 'workflow_dispatch' or os.environ['EVENT_SCHEDULE'] == slot
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'run={str(run).lower()}\nmonth={now:%Y-%m}\n')
+          PY
+
+  refresh:
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: schedule
+    if: needs.schedule.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - name: Install refresh dependencies
+        run: uv sync --locked --only-group refresh
+      - name: Preserve accepted baseline and pending historical updates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import os, subprocess
+          from pathlib import Path
+          baseline = Path(os.environ['RUNNER_TEMP']) / 'incident-accepted'
+          paths = subprocess.check_output(
+              ['git', 'ls-files', 'data/raw/Crime_Incidents_in_*.csv',
+               'data/clean/incident_data.csv.gz'], text=True
+          ).splitlines()
+          for name in paths:
+              path = baseline / name
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_bytes(subprocess.check_output(['git', 'show', f'HEAD:{name}']))
+          PY
+          open_pr=$(gh pr list --head automation/annual-incidents --base main --state open --json number --jq length)
+          if [ "$open_pr" != 0 ]; then
+            git fetch origin automation/annual-incidents
+            bash scripts/merge_pending_incidents.sh FETCH_HEAD
+          fi
+      - name: Restore monthly sweep marker
+        id: history
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/incident-history
+          key: incident-history-v1-${{ needs.schedule.outputs.month }}
+      - name: Download, validate, and run annual ETL
+        id: refresh
+        env:
+          FULL_HISTORY: ${{ inputs.full_history || false }}
+        run: |
+          args=()
+          if [ "$FULL_HISTORY" = true ]; then args+=(--full-history); fi
+          uv run --no-sync python -m scripts.refresh_incidents "${args[@]}" \
+            --accepted-root "$RUNNER_TEMP/incident-accepted" \
+            --history-marker "$RUNNER_TEMP/incident-history/month" \
+            --summary "$RUNNER_TEMP/incident-refresh.md" \
+            --pr-body "$RUNNER_TEMP/incident-pr.md"
+      - name: Create or update the review PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/annual-incidents
+          base: main
+          title: Refresh annual crime incident data
+          commit-message: Refresh validated annual crime incidents
+          body-path: ${{ runner.temp }}/incident-pr.md
+          add-paths: |
+            data/raw/Crime_Incidents_in_*.csv
+            data/clean/incident_data.csv.gz
+      - name: Remember successful monthly sweep
+        if: steps.history.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/incident-history
+          key: incident-history-v1-${{ needs.schedule.outputs.month }}
+      - name: Publish run summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/incident-refresh.md" ]; then
+            cat "$RUNNER_TEMP/incident-refresh.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Refresh failed before download validation; inspect the failed step logs.' >> "$GITHUB_STEP_SUMMARY"
+          fi

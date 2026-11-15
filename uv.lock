@@ -300,6 +300,9 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
+refresh = [
+    { name = "pandas" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -342,6 +345,7 @@ dev = [
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "ruff", specifier = ">=0.15.5" },
 ]
+refresh = [{ name = "pandas", specifier = ">=3.0.1" }]
 
 [[package]]
 name = "debugpy"

@@ -39,6 +39,9 @@ dependencies = [
 ]
 
 [dependency-groups]
+refresh = [
+    "pandas>=3.0.1",
+]
 dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.5",
