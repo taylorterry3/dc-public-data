@@ -8,13 +8,48 @@ from pathlib import Path
 from scripts.etl.common import data_cleanup, arrest_category_cleanup
 
 RAW_ARRESTS = Path("data/raw/Adult_Arrests.csv.gz")
+RAW_ARRESTS_2025 = Path("data/raw/2025AdultArrests_OpenData.csv")
 RAW_WARDS = Path("data/raw/Wards_from_2022.geojson")
 RAW_SMD = Path("data/raw/Single_Member_District_from_2023.geojson")
 CLEAN_ARRESTS = Path("data/clean/arrest_data.csv.gz")
 
+# Column rename map for the newer annual file format (title case → UPPER_SNAKE_CASE)
+_2025_COLUMN_MAP = {
+    "Arrestee Type": "TYPE",
+    "Arrest Year": "YEAR",
+    "Arrest Date": "DATE_",
+    "Arrest Hour": "HOUR",
+    "CCN": "CCN",
+    "Arrest Number#": "ARREST_NUMBER",
+    "Age": "AGE",
+    "Defendant PSA": "DEFENDANT_PSA",
+    "Defendant District": "DEFENDANT_DISTRICT",
+    "Defendant Race": "RACE",
+    "Defendant Ethnicity": "ETHNICITY",
+    "Defendant Sex": "SEX",
+    "Arrest Category": "CATEGORY",
+    "Charge Description": "DESCRIPTION",
+    "Arrest Location PSA": "ARREST_PSA",
+    "Arrest Location District": "ARREST_DISTRICT",
+    "Arrest Block GEOX": "ARREST_BLOCKX",
+    "Arrest Block GEOY": "ARREST_BLOCKY",
+    "Arrest Latitude": "ARREST_LATITUDE",
+    "Arrest Longitude": "ARREST_LONGITUDE",
+    "Offense Location PSA": "OFFENSE_PSA",
+    "Offense Location District": "OFFENSE_DISTRICT",
+    "Offense Block GEOX": "OFFENSE_BLOCKX",
+    "Offense Block GEOY": "OFFENSE_BLOCKY",
+    "Offense Latitude": "OFFENSE_LATITUDE",
+    "Offense Longitude": "OFFENSE_LONGITUDE",
+}
 
-def load_raw(path: Path = RAW_ARRESTS) -> pd.DataFrame:
-    return pd.read_csv(path, low_memory=False, dtype=str)
+
+def load_raw(path: Path = RAW_ARRESTS, path_2025: Path = RAW_ARRESTS_2025) -> pd.DataFrame:
+    base = pd.read_csv(path, low_memory=False, dtype=str)
+    new = pd.read_csv(path_2025, low_memory=False, dtype=str).rename(columns=_2025_COLUMN_MAP)
+    common_cols = [c for c in base.columns if c in new.columns]
+    df = pd.concat([base[common_cols], new[common_cols]], ignore_index=True)
+    return df.drop_duplicates(subset="CCN")
 
 
 def spatial_join(df: pd.DataFrame, wards_path: Path = RAW_WARDS, smd_path: Path = RAW_SMD) -> pd.DataFrame:
@@ -41,13 +76,13 @@ def spatial_join(df: pd.DataFrame, wards_path: Path = RAW_WARDS, smd_path: Path 
     return pd.DataFrame(gdf)
 
 
-def run(raw_path: Path = RAW_ARRESTS, output_path: Path = CLEAN_ARRESTS) -> pd.DataFrame:
+def run(raw_path: Path = RAW_ARRESTS, raw_path_2025: Path = RAW_ARRESTS_2025, output_path: Path = CLEAN_ARRESTS) -> pd.DataFrame:
     """Load, clean, spatially enrich, and save arrest data.
 
     Returns the cleaned DataFrame (for testing without writing to disk).
     Pass output_path=None to skip writing.
     """
-    df = load_raw(raw_path)
+    df = load_raw(raw_path, raw_path_2025)
     df = data_cleanup(df, "DATE_")
     df = arrest_category_cleanup(df)
     df = spatial_join(df)
