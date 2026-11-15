@@ -88,21 +88,18 @@ def test_download_rejects_source_mutation():
         refresh.download(2026, 11, changing)
 
 
-@pytest.mark.parametrize("problem", ["duplicate", "missing", "decrease", "wrong_year"])
+@pytest.mark.parametrize("problem", ["duplicate", "missing", "wrong_year"])
 def test_validation_rejects_suspicious_data(problem):
     fetch, _ = source(count=2)
     df = refresh.download(2026, 11, fetch)
-    old = None
     if problem == "duplicate":
         df.loc[1, "OBJECTID"] = df.loc[0, "OBJECTID"]
     elif problem == "missing":
         df = df.drop(columns="OFFENSE")
-    elif problem == "decrease":
-        old = pd.concat([df, df])
     else:
         df.loc[0, "REPORT_DAT"] = "2025-06-01T12:00:00Z"
     with pytest.raises(ValueError):
-        refresh.validate(df, 2026, old)
+        refresh.validate(df, 2026)
 
 
 def test_late_failure_leaves_every_file_and_marker_untouched(tmp_path):
@@ -175,17 +172,18 @@ def test_pending_history_is_retained_but_counts_use_accepted_main(tmp_path):
     assert next(y for y in result["years"] if y["year"] == 2025)["previous_rows"] == 1
 
 
-def test_accepted_count_decrease_stops_refresh_even_if_pending_file_is_smaller(tmp_path):
+def test_decrease_retains_accepted_rows_in_separate_history(tmp_path):
     baseline = tmp_path / "accepted"
     candidate = tmp_path / "candidate"
     accepted(baseline, count=2)
-    raw = accepted(candidate, count=1)
-    before = (raw / "Crime_Incidents_in_2025.csv").read_bytes()
+    accepted(candidate, count=1)
     fetch, _ = source()
-    with pytest.raises(ValueError, match="count decreased"):
-        refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
-    assert (raw / "Crime_Incidents_in_2025.csv").read_bytes() == before
-    assert not (raw / "Crime_Incidents_in_2026.csv").exists()
+    refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
+    history = refresh.read_csv(candidate / "data/history/incidents/2025/current.csv.gz")
+    assert len(history) == 2
+    assert history.present_in_latest_source.eq("false").sum() == 1
+    assert len(refresh.read_csv(candidate / "data/raw/Crime_Incidents_in_2025.csv")) == 1
+    assert len(pd.read_csv(candidate / "data/clean/incident_data.csv.gz")) == 3
 
 
 
@@ -261,16 +259,19 @@ def test_reverted_pending_year_is_excluded_from_pr_report(tmp_path):
 
 
 
-def test_skipped_historical_count_decrease_stops_before_publication(tmp_path):
+def test_skipped_legacy_pending_year_retains_accepted_rows_without_invented_dates(tmp_path):
     baseline = tmp_path / "accepted"
     candidate = tmp_path / "candidate"
     accepted(baseline, (2024, 2025, 2026), count=2)
-    raw = accepted(candidate, (2024, 2025, 2026), count=1)
-    before = {p.name: p.read_bytes() for p in raw.iterdir()}
+    accepted(candidate, (2024, 2025, 2026), count=1)
     fetch, _ = source((2024, 2025, 2026), count=2)
-    with pytest.raises(ValueError, match="2024: record count decreased"):
-        refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
-    assert before == {p.name: p.read_bytes() for p in raw.iterdir()}
+    refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
+    history = refresh.read_csv(candidate / "data/history/incidents/2024/current.csv.gz")
+    assert len(history) == 2
+    assert history.present_in_latest_source.eq("false").sum() == 1
+    assert history.first_seen_on.eq("").all()
+    assert history.last_seen_on.eq("").all()
+
 
 
 def test_merged_accepted_history_is_included_in_rebuilt_clean_output(tmp_path):
@@ -287,4 +288,47 @@ def test_merged_accepted_history_is_included_in_rebuilt_clean_output(tmp_path):
     result = refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
     clean = pd.read_csv(candidate / "data/clean/incident_data.csv.gz")
     assert "ACCEPTED CORRECTION" in set(clean.offense)
-    assert result["changed_files"] == ["data/clean/incident_data.csv.gz"]
+    assert "data/clean/incident_data.csv.gz" in result["changed_files"]
+
+
+def test_next_day_updates_observations_but_skipped_year_dates_stay_put(tmp_path):
+    accepted(tmp_path, (2024, 2025, 2026))
+    fetch, _ = source((2024, 2025, 2026))
+    refresh.refresh(tmp_path, full_history=True, fetch=fetch, now=NOW)
+    historical_path = tmp_path / "data/history/incidents/2024/current.csv.gz"
+    historical = historical_path.read_bytes()
+    raw = (tmp_path / "data/raw/Crime_Incidents_in_2025.csv").read_bytes()
+    next_day = NOW.replace(day=16)
+    result = refresh.refresh(tmp_path, fetch=fetch, now=next_day)
+    assert historical_path.read_bytes() == historical
+    latest = refresh.read_csv(tmp_path / "data/history/incidents/2025/current.csv.gz")
+    assert set(latest.last_seen_on) == {"2026-11-16"}
+    assert set(latest.first_seen_on) == {"2026-11-15"}
+    assert (tmp_path / "data/raw/Crime_Incidents_in_2025.csv").read_bytes() == raw
+    assert all("data/raw" not in p for p in result["changed_files"])
+
+
+def test_failed_later_year_does_not_publish_observation_dates_or_versions(tmp_path):
+    accepted(tmp_path, (2025, 2026))
+    fetch, _ = source()
+    refresh.refresh(tmp_path, fetch=fetch, now=NOW)
+    before = {str(p.relative_to(tmp_path)): p.read_bytes()
+              for p in (tmp_path / "data").rglob('*') if p.is_file()}
+    fetch, _ = source(broken=2026)
+    with pytest.raises(ValueError, match="incomplete"):
+        refresh.refresh(tmp_path, fetch=fetch, now=NOW.replace(day=16))
+    assert before == {str(p.relative_to(tmp_path)): p.read_bytes()
+                      for p in (tmp_path / "data").rglob('*') if p.is_file()}
+
+
+def test_regular_incident_etl_reads_retained_current_versions(tmp_path, monkeypatch):
+    from scripts.etl.incidents import load_raw_annual
+
+    accepted(tmp_path, (2025,), count=2)
+    fetch, _ = source((2025,), count=1)
+    refresh.refresh(tmp_path, fetch=fetch, now=NOW)
+    monkeypatch.chdir(tmp_path)
+    annual = load_raw_annual()
+    assert len(annual) == 2
+    assert annual.present_in_latest_source.eq("false").sum() == 1
+    assert "superseded_on" not in annual.columns

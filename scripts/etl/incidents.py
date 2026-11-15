@@ -1,10 +1,11 @@
 """ETL pipeline for DC crime incident data."""
 
-import glob
-import pandas as pd
 from pathlib import Path
 
+import pandas as pd
+
 from scripts.etl.common import data_cleanup
+from scripts.etl.incident_history import load_annual
 
 RAW_INCIDENTS_GLOB = "data/raw/Crime_Incidents*"
 RAW_INCIDENTS_ALL = Path("data/raw/dc-crimes-search-results.csv")
@@ -14,8 +15,11 @@ CLEAN_INCIDENTS_ALL = Path("data/clean/incident_data_all.csv.gz")
 
 def load_raw_annual() -> pd.DataFrame:
     """Load and concatenate annual Crime_Incidents_in_*.csv files."""
-    files = glob.glob(RAW_INCIDENTS_GLOB)
-    return pd.concat(map(pd.read_csv, files), ignore_index=True)
+    files = {int(p.stem.rsplit("_", 1)[1]): p
+             for p in Path("data/raw").glob("Crime_Incidents_in_*.csv")}
+    current = {int(p.parent.name): p
+               for p in Path("data/history/incidents").glob("*/current.csv.gz")}
+    return load_annual(files, current)
 
 
 def load_raw_all(path: Path = RAW_INCIDENTS_ALL) -> pd.DataFrame:
