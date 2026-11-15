@@ -28,7 +28,7 @@ Required columns and values, dates, report-year membership, unique OBJECTIDs wit
 
 REST dates are serialized in UTC. Source geometry supplies the existing X/Y columns in EPSG:26985. Identifiers remain strings when reading CSVs for ETL. The first export may have formatting-only differences from old portal CSVs. Thereafter deterministic row ordering, CSV formatting and gzip timestamps prevent identical downloads from generating commits.
 
-All attempted years validate before annual ETL runs and checkout files are replaced. The Crime Cards cleaned file is not regenerated. Source URLs, retrieval time, row counts, maximum report dates and export hashes appear in the run summary and proposed PR.
+All attempted years validate before annual ETL runs and checkout files are replaced. The Crime Cards cleaned file is not regenerated. The Actions summary describes the latest download run. The PR description is rebuilt from every pending file against accepted `main`, including preserved historical years, with accepted/candidate row counts, source URLs, maximum report dates and file hashes. Report-generation time does not imply historical files were downloaded again.
 
 ## Review and failure behavior
 

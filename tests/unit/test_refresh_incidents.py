@@ -197,3 +197,62 @@ def test_missing_incident_dates_are_allowed_but_invalid_dates_fail():
     df.loc[0, "START_DATE"] = "not-a-date"
     with pytest.raises(ValueError):
         refresh.validate(df, 2026)
+
+
+def test_unchanged_daily_run_reports_entire_pending_diff(tmp_path):
+    import hashlib
+
+    baseline = tmp_path / "accepted"
+    candidate = tmp_path / "candidate"
+    accepted(baseline, (2024, 2025, 2026), count=1)
+    raw = accepted(candidate, (2024, 2025, 2026), count=2)
+    fetch, _ = source((2024, 2025, 2026), count=2)
+    result = refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
+    assert result["changed_files"] == []
+    assert all(y["changed"] for y in result["years"])
+    assert [y["year"] for y in result["pending_years"]] == [2024, 2025, 2026]
+    historical = result["pending_years"][0]
+    assert historical["previous_rows"] == 1
+    assert historical["rows"] == 2
+    assert historical["source"].endswith("/10")
+    assert historical["sha256"] == hashlib.sha256(
+        (raw / "Crime_Incidents_in_2024.csv").read_bytes()
+    ).hexdigest()
+
+
+def test_cli_separates_latest_run_from_pending_pr_details(tmp_path, monkeypatch):
+    import sys
+
+    baseline = tmp_path / "accepted"
+    candidate = tmp_path / "candidate"
+    accepted(baseline, (2024, 2025, 2026), count=1)
+    accepted(candidate, (2024, 2025, 2026), count=2)
+    fetch, _ = source((2024, 2025, 2026), count=2)
+    result = refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
+    summary = tmp_path / "summary.md"
+    pr_body = tmp_path / "pr.md"
+    monkeypatch.setattr(refresh, "refresh", lambda *args, **kwargs: result)
+    monkeypatch.setattr(sys, "argv", [
+        "refresh", "--summary", str(summary), "--pr-body", str(pr_body),
+    ])
+    refresh.main()
+    assert "| 2024 |" not in summary.read_text()
+    body = pr_body.read_text()
+    for year in (2024, 2025, 2026):
+        assert f"| {year} | 1 | 2 | True |" in body
+    for item in result["pending_years"]:
+        assert item["source"] in body
+        assert item["sha256"] in body
+
+
+def test_reverted_pending_year_is_excluded_from_pr_report(tmp_path):
+    baseline = tmp_path / "accepted"
+    candidate = tmp_path / "candidate"
+    accepted(baseline, (2025, 2026), count=1)
+    accepted(candidate, (2025, 2026), count=2)
+    fetch, _ = source(count=1)
+    result = refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
+    assert result["changed_files"]  # Candidate changed back to accepted content.
+    assert not any(y["changed"] for y in result["years"])
+    assert result["pending_years"] == []
+    assert all(not item["path"].startswith("data/raw/") for item in result["pending_files"])

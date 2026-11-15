@@ -67,7 +67,8 @@ jobs:
           from pathlib import Path
           baseline = Path(os.environ['RUNNER_TEMP']) / 'incident-accepted'
           paths = subprocess.check_output(
-              ['git', 'ls-files', 'data/raw/Crime_Incidents_in_*.csv'], text=True
+              ['git', 'ls-files', 'data/raw/Crime_Incidents_in_*.csv',
+               'data/clean/incident_data.csv.gz'], text=True
           ).splitlines()
           for name in paths:
               path = baseline / name
@@ -96,7 +97,8 @@ jobs:
           uv run --no-sync python -m scripts.refresh_incidents "${args[@]}" \
             --accepted-root "$RUNNER_TEMP/incident-accepted" \
             --history-marker "$RUNNER_TEMP/incident-history/month" \
-            --summary "$RUNNER_TEMP/incident-refresh.md"
+            --summary "$RUNNER_TEMP/incident-refresh.md" \
+            --pr-body "$RUNNER_TEMP/incident-pr.md"
       - name: Create or update the review PR
         uses: peter-evans/create-pull-request@v7
         with:
@@ -104,7 +106,7 @@ jobs:
           base: main
           title: Refresh annual crime incident data
           commit-message: Refresh validated annual crime incidents
-          body-path: ${{ runner.temp }}/incident-refresh.md
+          body-path: ${{ runner.temp }}/incident-pr.md
           add-paths: |
             data/raw/Crime_Incidents_in_*.csv
             data/clean/incident_data.csv.gz

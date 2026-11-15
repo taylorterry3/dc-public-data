@@ -179,7 +179,10 @@ def refresh(
                 "year": year, "source": f"{SERVICE}/{layers[year]}",
                 "rows": len(df), "previous_rows": len(old) if old is not None else None,
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                "maximum_report_date": df.REPORT_DAT.max(), "changed": is_changed,
+                "maximum_report_date": df.REPORT_DAT.max(),
+                "changed": not accepted_path.exists() or
+                path.read_bytes() != accepted_path.read_bytes(),
+                "updated_this_run": is_changed,
             })
         if changed:
             replacements = {dest.name: source for source, dest in changed}
@@ -194,7 +197,41 @@ def refresh(
                 clean_path, index=False, compression={"method": "gzip", "mtime": 0},
             )
             changed.append((clean_path, root / "data/clean/incident_data.csv.gz"))
-            # All downloads, validation and ETL have succeeded. Publish only staged files.
+        # Compare the complete candidate snapshot before replacing local baseline files.
+        files = {p.name: p for p in existing.values()}
+        files.update({dest.name: source for source, dest in changed if dest.parent == raw})
+        pending_years = []
+        pending_files = []
+        for name, path in sorted(files.items()):
+            accepted_path = baseline / name
+            content = path.read_bytes()
+            if accepted_path.exists() and content == accepted_path.read_bytes():
+                continue
+            year = int(path.stem.rsplit("_", 1)[1])
+            df = read_csv(path)
+            digest = hashlib.sha256(content).hexdigest()
+            pending_years.append({
+                "year": year, "source": f"{SERVICE}/{layers[year]}", "rows": len(df),
+                "previous_rows": len(read_csv(accepted_path)) if accepted_path.exists() else None,
+                "sha256": digest, "maximum_report_date": df.REPORT_DAT.max(), "changed": True,
+            })
+            pending_files.append({"path": f"data/raw/{name}", "sha256": digest})
+        clean_relative = Path("data/clean/incident_data.csv.gz")
+        clean_candidate = next(
+            (src for src, dest in changed if dest == root / clean_relative),
+            root / clean_relative,
+        )
+        clean_accepted = (accepted_root or root) / clean_relative
+        if clean_candidate.exists() and (
+            not clean_accepted.exists() or
+            clean_candidate.read_bytes() != clean_accepted.read_bytes()
+        ):
+            pending_files.append({
+                "path": str(clean_relative),
+                "sha256": hashlib.sha256(clean_candidate.read_bytes()).hexdigest(),
+            })
+        # All downloads, validation, ETL and reporting have succeeded.
+        if changed:
             for source, dest in changed:
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, dest)
@@ -205,8 +242,30 @@ def refresh(
     return {
         "retrieved_at": datetime.now(timezone.utc).isoformat(),
         "historical_sweep": full_history, "warnings": warnings, "years": results,
+        "pending_years": pending_years, "pending_files": pending_files,
         "changed_files": [str(dest.relative_to(root)) for _, dest in changed],
     }
+
+
+def render_report(result, *, pending=False):
+    """Keep download-run observations separate from the entire review snapshot."""
+    years = result["pending_years"] if pending else result["years"]
+    title = "Pending annual incident changes against accepted main" if pending else "Incident run"
+    lines = [f"## {title}", "", f"Report generated: {result['retrieved_at']}", ""]
+    lines += result["warnings"]
+    lines += ["", "| Year | Accepted rows | Candidate rows | Differs from accepted main |",
+              "| --- | --- | --- | --- |"]
+    for item in years:
+        lines.append(
+            f"| {item['year']} | {item['previous_rows']} | {item['rows']} | {item['changed']} |"
+        )
+    payload = {"years": years, "files": result["pending_files"]} if pending else result
+    if pending:
+        lines += ["", "Includes preserved historical changes not downloaded this run.",
+                  "Hashes describe the pending files; report time is not their retrieval time."]
+    lines += ["", "Source URLs and export hashes:", "", "```json",
+              json.dumps(payload, indent=2), "```", "", "Human review is required."]
+    return "\n".join(lines) + "\n"
 
 
 def main():
@@ -216,24 +275,16 @@ def main():
     parser.add_argument("--accepted-root", type=Path, help="Accepted main snapshot for row counts")
     parser.add_argument("--history-marker", type=Path)
     parser.add_argument("--summary", type=Path, default=Path("/tmp/incident-refresh-summary.md"))
+    parser.add_argument("--pr-body", type=Path, help="Complete pending diff against accepted data")
     args = parser.parse_args()
     try:
         result = refresh(
             args.root, full_history=args.full_history, marker=args.history_marker,
             accepted_root=args.accepted_root,
         )
-        lines = ["## Annual incident refresh", "", f"Retrieved: {result['retrieved_at']}", ""]
-        lines += result["warnings"]
-        lines += ["", "| Year | Accepted rows | Downloaded rows | Changed |",
-                  "| --- | --- | --- | --- |"]
-        for item in result["years"]:
-            lines.append(
-                f"| {item['year']} | {item['previous_rows']} | {item['rows']} | "
-                f"{item['changed']} |"
-            )
-        lines += ["", "Source URLs and export hashes:", "", "```json",
-                  json.dumps(result, indent=2), "```", "", "Human review is required."]
-        args.summary.write_text("\n".join(lines) + "\n")
+        args.summary.write_text(render_report(result))
+        if args.pr_body is not None:
+            args.pr_body.write_text(render_report(result, pending=True))
         if output := os.environ.get("GITHUB_OUTPUT"):
             with open(output, "a") as stream:
                 stream.write(f"changed={str(bool(result['changed_files'])).lower()}\n")
