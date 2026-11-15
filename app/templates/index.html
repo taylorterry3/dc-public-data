@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}DC Public Data — Home{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <h1>Washington DC Public Safety Data</h1>
+  <p>Explore arrests, crime incidents, police stops, and 311 service requests for Washington, DC. Browse citywide trends or filter by Ward, ANC, or Single Member District.</p>
+</div>
+
+<section class="summary-cards">
+  <div class="card">
+    <h2>Arrests</h2>
+    <div class="stat">{{ "{:,}".format(summary.arrests_curr) }}</div>
+    <div class="stat-label">{{ summary.current_year }} total</div>
+    <div class="stat-change {% if summary.arrests_pct > 0 %}up{% elif summary.arrests_pct < 0 %}down{% endif %}">
+      {% if summary.arrests_pct > 0 %}+{% endif %}{{ summary.arrests_pct }}% vs {{ summary.prev_year }}
+    </div>
+    <a href="/arrests/" class="btn">Explore arrests →</a>
+  </div>
+
+  <div class="card">
+    <h2>Crime Incidents</h2>
+    <div class="stat">{{ "{:,}".format(summary.incidents_curr) }}</div>
+    <div class="stat-label">{{ summary.current_year }} total</div>
+    <div class="stat-change {% if summary.incidents_pct > 0 %}up{% elif summary.incidents_pct < 0 %}down{% endif %}">
+      {% if summary.incidents_pct > 0 %}+{% endif %}{{ summary.incidents_pct }}% vs {{ summary.prev_year }}
+    </div>
+    <a href="/incidents/" class="btn">Explore incidents →</a>
+  </div>
+
+  <div class="card">
+    <h2>311 Service Requests</h2>
+    <div class="stat">{{ "{:,}".format(summary.req_curr) }}</div>
+    <div class="stat-label">{{ summary.current_year }} total</div>
+    <div class="stat-change {% if summary.req_pct > 0 %}up{% elif summary.req_pct < 0 %}down{% endif %}">
+      {% if summary.req_pct > 0 %}+{% endif %}{{ summary.req_pct }}% vs {{ summary.prev_year }}
+    </div>
+    <a href="/311/" class="btn">Explore 311 →</a>
+  </div>
+
+  <div class="card">
+    <h2>Police Stops</h2>
+    <div class="stat">{{ "{:,}".format(summary.stops_curr) }}</div>
+    <div class="stat-label">{{ summary.stops_year }} total</div>
+    <div class="stat-change {% if summary.stops_pct > 0 %}up{% elif summary.stops_pct < 0 %}down{% endif %}">
+      {% if summary.stops_pct > 0 %}+{% endif %}{{ summary.stops_pct }}% vs {{ summary.prev_year }}
+    </div>
+    <a href="/stops/" class="btn">Explore stops →</a>
+  </div>
+</section>
+
+<section class="about">
+  <h2>About This Site</h2>
+  <p>All data is sourced from the DC government's open data portal and updated regularly. Browse by topic using the navigation above, or filter any view by ward, ANC, or SMD using the controls on each page.</p>
+  <p>Source code and raw data are available on <a href="https://github.com/taylorterry3/dc-public-data" target="_blank">GitHub</a>.</p>
+</section>
+{% endblock %}

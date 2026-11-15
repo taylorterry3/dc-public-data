@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}311 Service Requests — {{ geo_label }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>311 Service Requests — {{ geo_label }}</h1>
+
+  <form class="geo-filter" method="get" action="/311/">
+    <label>Ward:
+      <select name="ward" onchange="this.form.submit()">
+        <option value="">All wards</option>
+        {% for w in wards %}
+        <option value="{{ w }}" {% if ward == w %}selected{% endif %}>Ward {{ w }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% if ward %}
+    <a href="/311/" class="btn-secondary">Clear filter</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="charts-grid">
+  <div class="chart-card wide">
+    <h2>Requests by Year</h2>
+    <div id="chart-by-year"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>Top Service Types — {{ year }}</h2>
+    <div id="chart-by-service"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>Requests by Agency — {{ year }}</h2>
+    <div id="chart-by-agency"></div>
+  </div>
+
+  {% if not ward %}
+  <div class="chart-card">
+    <h2>Requests by Ward — {{ year }}</h2>
+    <div id="chart-by-ward"></div>
+  </div>
+  {% endif %}
+
+  <div class="chart-card {% if ward %}wide{% endif %}">
+    <h2>Request Status — {{ year }}</h2>
+    <div id="chart-status"></div>
+  </div>
+</div>
+
+<section class="data-table">
+  <h2>{{ prev_year }} vs {{ current_year }} by Service Type</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Service Type</th>
+        <th>{{ prev_year }}</th>
+        <th>{{ current_year }}</th>
+        <th>Change</th>
+        <th>% Change</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in yoy %}
+      <tr>
+        <td>{{ row.service }}</td>
+        <td>{{ "{:,}".format(row.prev) }}</td>
+        <td>{{ "{:,}".format(row.curr) }}</td>
+        <td class="{% if row.change > 0 %}up{% elif row.change < 0 %}down{% endif %}">
+          {% if row.change > 0 %}+{% endif %}{{ "{:,}".format(row.change) }}
+        </td>
+        <td class="{% if row.pct_change and row.pct_change > 0 %}up{% elif row.pct_change and row.pct_change < 0 %}down{% endif %}">
+          {% if row.pct_change %}
+            {% if row.pct_change > 0 %}+{% endif %}{{ row.pct_change }}%
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<script>
+const byYear    = {{ by_year    | tojson }};
+const byService = {{ by_service | tojson }};
+const byAgency  = {{ by_agency  | tojson }};
+const byWard    = {{ by_ward    | tojson }};
+const status    = {{ status     | tojson }};
+
+const layout_base = {
+  margin: { t: 10, r: 10, b: 40, l: 50 },
+  paper_bgcolor: 'transparent',
+  plot_bgcolor: 'transparent',
+};
+
+Plotly.newPlot('chart-by-year', [{
+  x: byYear.map(d => d.year),
+  y: byYear.map(d => d.requests),
+  type: 'bar',
+  marker: { color: '#0891b2' },
+}], { ...layout_base, yaxis: { title: 'Requests' } });
+
+Plotly.newPlot('chart-by-service', [{
+  x: byService.map(d => d.requests),
+  y: byService.map(d => d.service),
+  type: 'bar',
+  orientation: 'h',
+  marker: { color: '#0891b2' },
+}], { ...layout_base, margin: { ...layout_base.margin, l: 200 }, xaxis: { title: 'Requests' }, yaxis: { automargin: true } });
+
+Plotly.newPlot('chart-by-agency', [{
+  values: byAgency.map(d => d.requests),
+  labels: byAgency.map(d => d.agency),
+  type: 'pie',
+  hole: 0.4,
+  textinfo: 'label+percent',
+  hoverinfo: 'label+value',
+}], { ...layout_base, margin: { t: 10, r: 10, b: 10, l: 10 }, showlegend: false });
+
+{% if not ward %}
+Plotly.newPlot('chart-by-ward', [{
+  x: byWard.map(d => 'Ward ' + d.ward),
+  y: byWard.map(d => d.requests),
+  type: 'bar',
+  marker: { color: '#0891b2' },
+}], { ...layout_base, yaxis: { title: 'Requests' } });
+{% endif %}
+
+Plotly.newPlot('chart-status', [{
+  values: status.map(d => d.requests),
+  labels: status.map(d => d.status),
+  type: 'pie',
+  hole: 0.4,
+  textinfo: 'label+percent',
+  hoverinfo: 'label+value',
+  marker: { colors: ['#059669', '#2563eb', '#f59e0b', '#9ca3af', '#dc2626'] },
+}], { ...layout_base, margin: { t: 10, r: 10, b: 10, l: 10 }, showlegend: false });
+</script>
+{% endblock %}

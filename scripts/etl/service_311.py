@@ -4,6 +4,8 @@ import glob
 import pandas as pd
 from pathlib import Path
 
+from scripts.etl.common import normalize_ward
+
 RAW_311_GLOB = "data/raw/311_City_Service_Requests*.csv.gz"
 CLEAN_311_TEMPLATE = "data/clean/311_data_part_{}.csv.gz"
 NUM_PARTS = 3
@@ -22,6 +24,8 @@ def run(output_template: str = CLEAN_311_TEMPLATE, num_parts: int = NUM_PARTS) -
     Returns the combined DataFrame. Pass output_template=None to skip writing.
     """
     df = load_raw()
+    if "WARD" in df.columns:
+        df["WARD"] = normalize_ward(df["WARD"])
     print(f"311 records: {len(df):,}")
 
     if output_template is not None:

@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from scripts.etl.common import arrest_category_cleanup, data_cleanup
+from scripts.etl.common import arrest_category_cleanup, data_cleanup, normalize_district, normalize_ward
 
 
 class TestDataCleanup:
@@ -88,3 +88,53 @@ class TestArrestCategoryCleanup:
         df = pd.DataFrame({"category": ["Theft", " rcotics", "Assault", "Kid pping"]})
         result = arrest_category_cleanup(df.copy())
         assert result["category"].tolist() == ["Theft", "Narcotics", "Assault", "Kidnapping"]
+
+
+class TestNormalizeWard:
+    def test_integer(self):
+        s = pd.Series([1, 2, 8])
+        assert normalize_ward(s).tolist() == ["1", "2", "8"]
+
+    def test_float_string(self):
+        s = pd.Series(["1.0", "4.0", "8.0"])
+        assert normalize_ward(s).tolist() == ["1", "4", "8"]
+
+    def test_clean_string(self):
+        s = pd.Series(["1", "4", "8"])
+        assert normalize_ward(s).tolist() == ["1", "4", "8"]
+
+    def test_mixed(self):
+        s = pd.Series(["1", "2.0", "3", "4.0"])
+        assert normalize_ward(s).tolist() == ["1", "2", "3", "4"]
+
+    def test_none_preserved(self):
+        s = pd.Series(["1", None, "3"])
+        result = normalize_ward(s)
+        assert result[0] == "1"
+        assert pd.isna(result[1])
+        assert result[2] == "3"
+
+
+class TestNormalizeDistrict:
+    def test_already_formatted(self):
+        s = pd.Series(["1D", "3D", "7D"])
+        assert normalize_district(s).tolist() == ["1D", "3D", "7D"]
+
+    def test_bare_integer_string(self):
+        s = pd.Series(["1", "3", "7"])
+        assert normalize_district(s).tolist() == ["1D", "3D", "7D"]
+
+    def test_float(self):
+        s = pd.Series([1.0, 3.0, 7.0])
+        assert normalize_district(s).tolist() == ["1D", "3D", "7D"]
+
+    def test_mixed(self):
+        s = pd.Series(["1D", "2", "3D", "4"])
+        assert normalize_district(s).tolist() == ["1D", "2D", "3D", "4D"]
+
+    def test_none_preserved(self):
+        s = pd.Series(["1D", None, "3D"])
+        result = normalize_district(s)
+        assert result[0] == "1D"
+        assert pd.isna(result[1])
+        assert result[2] == "3D"

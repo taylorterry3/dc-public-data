@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Police Stops — {{ geo_label }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Police Stops — {{ geo_label }}</h1>
+  <p class="page-note">Data available for 2023–2025. Filtered to complete years where noted.</p>
+
+  <form class="geo-filter" method="get" action="/stops/">
+    <label>District:
+      <select name="district" onchange="this.form.submit()">
+        <option value="">All districts</option>
+        {% for d in districts %}
+        <option value="{{ d }}" {% if district == d %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% if district %}
+    <a href="/stops/" class="btn-secondary">Clear filter</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="stat-row">
+  <div class="stat-box">
+    <div class="stat">{{ "{:,}".format(search_summary.total) }}</div>
+    <div class="stat-label">Total stops — {{ current_year }}</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat">{{ "{:,}".format(search_summary.searched) }}</div>
+    <div class="stat-label">Persons searched ({{ search_summary.search_rate }}%)</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat">{{ "{:,}".format(search_summary.arrested) }}</div>
+    <div class="stat-label">Resulting in arrest ({{ search_summary.arrest_rate }}%)</div>
+  </div>
+</div>
+
+<div class="charts-grid">
+  <div class="chart-card wide">
+    <h2>Stops by Year</h2>
+    <div id="chart-by-year"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>Stops by Ethnicity — {{ current_year }}</h2>
+    <div id="chart-by-ethnicity"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>Stop Type — {{ current_year }}</h2>
+    <div id="chart-by-type"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>Search Rate by Ethnicity — {{ current_year }}</h2>
+    <p class="chart-note">Groups with fewer than 50 stops excluded.</p>
+    <div id="chart-search-rate"></div>
+  </div>
+
+  <div class="chart-card">
+    <h2>Stops by Gender — {{ current_year }}</h2>
+    <div id="chart-by-gender"></div>
+  </div>
+
+  {% if not district %}
+  <div class="chart-card wide">
+    <h2>Stops by Police District — {{ current_year }}</h2>
+    <div id="chart-by-district"></div>
+  </div>
+  {% endif %}
+</div>
+
+<section class="data-table">
+  <h2>Search Rate by Ethnicity — {{ current_year }}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Ethnicity</th>
+        <th>Stops</th>
+        <th>Searched</th>
+        <th>Search Rate</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in search_by_ethnicity %}
+      <tr>
+        <td>{{ row.ethnicity }}</td>
+        <td>{{ "{:,}".format(row.stops) }}</td>
+        <td>{{ "{:,}".format(row.searched) }}</td>
+        <td>{{ row.search_rate }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<script>
+const byYear       = {{ by_year            | tojson }};
+const byDistrict   = {{ by_district        | tojson }};
+const byType       = {{ by_type            | tojson }};
+const byEthnicity  = {{ by_ethnicity       | tojson }};
+const byGender     = {{ by_gender          | tojson }};
+const searchByEth  = {{ search_by_ethnicity | tojson }};
+
+const layout_base = {
+  margin: { t: 10, r: 10, b: 40, l: 50 },
+  paper_bgcolor: 'transparent',
+  plot_bgcolor: 'transparent',
+};
+
+Plotly.newPlot('chart-by-year', [{
+  x: byYear.map(d => d.year),
+  y: byYear.map(d => d.stops),
+  type: 'bar',
+  marker: { color: '#7c3aed' },
+}], { ...layout_base, yaxis: { title: 'Stops' } });
+
+Plotly.newPlot('chart-by-ethnicity', [{
+  values: byEthnicity.map(d => d.stops),
+  labels: byEthnicity.map(d => d.ethnicity),
+  type: 'pie',
+  hole: 0.4,
+  textinfo: 'label+percent',
+  hoverinfo: 'label+value',
+}], { ...layout_base, margin: { t: 10, r: 10, b: 10, l: 10 }, showlegend: false });
+
+Plotly.newPlot('chart-by-type', [{
+  values: byType.map(d => d.stops),
+  labels: byType.map(d => d.stop_type),
+  type: 'pie',
+  hole: 0.4,
+  textinfo: 'label+percent',
+  hoverinfo: 'label+value',
+}], { ...layout_base, margin: { t: 10, r: 10, b: 10, l: 10 }, showlegend: false });
+
+Plotly.newPlot('chart-search-rate', [{
+  x: searchByEth.map(d => d.search_rate),
+  y: searchByEth.map(d => d.ethnicity),
+  type: 'bar',
+  orientation: 'h',
+  marker: { color: '#dc2626' },
+  text: searchByEth.map(d => d.search_rate + '%'),
+  textposition: 'outside',
+}], {
+  ...layout_base,
+  margin: { t: 10, r: 60, b: 40, l: 160 },
+  xaxis: { title: 'Search rate (%)', range: [0, Math.max(...searchByEth.map(d => d.search_rate)) * 1.2] },
+  yaxis: { automargin: true },
+});
+
+Plotly.newPlot('chart-by-gender', [{
+  values: byGender.map(d => d.stops),
+  labels: byGender.map(d => d.gender),
+  type: 'pie',
+  hole: 0.4,
+  textinfo: 'label+percent',
+  hoverinfo: 'label+value',
+}], { ...layout_base, margin: { t: 10, r: 10, b: 10, l: 10 }, showlegend: false });
+
+{% if not district %}
+Plotly.newPlot('chart-by-district', [{
+  x: byDistrict.map(d => d.district),
+  y: byDistrict.map(d => d.stops),
+  type: 'bar',
+  marker: { color: '#7c3aed' },
+}], { ...layout_base, yaxis: { title: 'Stops' } });
+{% endif %}
+</script>
+{% endblock %}
