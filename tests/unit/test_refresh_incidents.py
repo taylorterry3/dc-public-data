@@ -208,6 +208,8 @@ def test_unchanged_daily_run_reports_entire_pending_diff(tmp_path):
     raw = accepted(candidate, (2024, 2025, 2026), count=2)
     fetch, _ = source((2024, 2025, 2026), count=2)
     result = refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
+    # First pass builds the fixture's missing cleaned output; the next is a true no-op.
+    result = refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
     assert result["changed_files"] == []
     assert all(y["changed"] for y in result["years"])
     assert [y["year"] for y in result["pending_years"]] == [2024, 2025, 2026]
@@ -256,3 +258,33 @@ def test_reverted_pending_year_is_excluded_from_pr_report(tmp_path):
     assert not any(y["changed"] for y in result["years"])
     assert result["pending_years"] == []
     assert all(not item["path"].startswith("data/raw/") for item in result["pending_files"])
+
+
+
+def test_skipped_historical_count_decrease_stops_before_publication(tmp_path):
+    baseline = tmp_path / "accepted"
+    candidate = tmp_path / "candidate"
+    accepted(baseline, (2024, 2025, 2026), count=2)
+    raw = accepted(candidate, (2024, 2025, 2026), count=1)
+    before = {p.name: p.read_bytes() for p in raw.iterdir()}
+    fetch, _ = source((2024, 2025, 2026), count=2)
+    with pytest.raises(ValueError, match="2024: record count decreased"):
+        refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
+    assert before == {p.name: p.read_bytes() for p in raw.iterdir()}
+
+
+def test_merged_accepted_history_is_included_in_rebuilt_clean_output(tmp_path):
+    baseline = tmp_path / "accepted"
+    candidate = tmp_path / "candidate"
+    accepted(baseline, (2024, 2025, 2026), count=1)
+    raw = accepted(candidate, (2024, 2025, 2026), count=2)
+    fetch, _ = source((2024, 2025, 2026), count=2)
+    refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
+    # A nonconflicting main-only historical correction has survived the merge.
+    corrected = refresh.read_csv(raw / "Crime_Incidents_in_2024.csv")
+    corrected.loc[0, "OFFENSE"] = "ACCEPTED CORRECTION"
+    corrected.to_csv(raw / "Crime_Incidents_in_2024.csv", index=False)
+    result = refresh.refresh(candidate, accepted_root=baseline, fetch=fetch, now=NOW)
+    clean = pd.read_csv(candidate / "data/clean/incident_data.csv.gz")
+    assert "ACCEPTED CORRECTION" in set(clean.offense)
+    assert result["changed_files"] == ["data/clean/incident_data.csv.gz"]

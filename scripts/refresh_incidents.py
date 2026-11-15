@@ -184,7 +184,18 @@ def refresh(
                 path.read_bytes() != accepted_path.read_bytes(),
                 "updated_this_run": is_changed,
             })
-        if changed:
+        pending_raw = any(
+            not (baseline / p.name).exists() or
+            p.read_bytes() != (baseline / p.name).read_bytes()
+            for p in existing.values()
+        ) if accepted_root is not None else False
+        clean_existing = root / "data/clean/incident_data.csv.gz"
+        clean_baseline = (accepted_root or root) / "data/clean/incident_data.csv.gz"
+        pending_clean = accepted_root is not None and clean_existing.exists() and (
+            not clean_baseline.exists() or
+            clean_existing.read_bytes() != clean_baseline.read_bytes()
+        )
+        if changed or pending_raw or pending_clean:
             replacements = {dest.name: source for source, dest in changed}
             files = {p.name: p for p in existing.values()}
             files.update(replacements)
@@ -196,7 +207,9 @@ def refresh(
             cleaned.to_csv(
                 clean_path, index=False, compression={"method": "gzip", "mtime": 0},
             )
-            changed.append((clean_path, root / "data/clean/incident_data.csv.gz"))
+            clean_dest = root / "data/clean/incident_data.csv.gz"
+            if not clean_dest.exists() or clean_path.read_bytes() != clean_dest.read_bytes():
+                changed.append((clean_path, clean_dest))
         # Compare the complete candidate snapshot before replacing local baseline files.
         files = {p.name: p for p in existing.values()}
         files.update({dest.name: source for source, dest in changed if dest.parent == raw})
@@ -209,10 +222,12 @@ def refresh(
                 continue
             year = int(path.stem.rsplit("_", 1)[1])
             df = read_csv(path)
+            old = read_csv(accepted_path) if accepted_path.exists() else None
+            validate(df, year, old)
             digest = hashlib.sha256(content).hexdigest()
             pending_years.append({
                 "year": year, "source": f"{SERVICE}/{layers[year]}", "rows": len(df),
-                "previous_rows": len(read_csv(accepted_path)) if accepted_path.exists() else None,
+                "previous_rows": len(old) if old is not None else None,
                 "sha256": digest, "maximum_report_date": df.REPORT_DAT.max(), "changed": True,
             })
             pending_files.append({"path": f"data/raw/{name}", "sha256": digest})
