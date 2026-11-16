@@ -51,7 +51,7 @@ For repeatable commands, cache behavior and generated artifacts, see [local audi
 
 ## Repeat verification
 
-A second full refresh against the generated history and identical frozen files completed all 13 years with **zero changed files**. Additional checks confirmed exact raw-export bytes, published-subset counts, no loss of accepted occurrences, archive count/version-counter consistency, unique cleaned record IDs, and the totals above. The unit suite has **65 passing tests**; Ruff and whitespace checks pass.
+A second full refresh against the generated history and identical frozen files completed all 13 years with **zero changed files**. Additional checks confirmed exact raw-export bytes, published-subset counts, no loss of accepted occurrences, archive count/version-counter consistency, unique cleaned record IDs, and the totals above. The unit suite now has **74 passing tests**; Ruff and whitespace checks pass.
 
 The local artifacts are retained under ignored `.cache/incident-audit-full/`:
 
@@ -69,3 +69,14 @@ uv run python -m scripts.audit_incidents --cache-dir .cache/incident-audit-full 
 ```
 
 GitHub PR-creation and branch-update behavior are outside this offline data replay. This audit removes the known historical-data blockers; it does not assert that future live source snapshots cannot introduce new cases.
+
+
+## Review hardening
+
+Greptile identified three gaps in the audit tool; all were reproduced with failing regressions and fixed:
+
+- Preflight now uses retained candidates, including absent records, and passes current/archived metadata to reconciliation. Preflight against the full generated history passed **108 groups** with zero issues; the original accepted-raw preflight still passes its 104 groups.
+- Resume retains the saved inventory and rejects mapping changes (including added years) before changing files. Completed frozen exports are never silently redownloaded after corruption. A full 19-export resume reused all files with zero downloads and byte-identical manifest contents.
+- Retention checks use accepted record IDs when history exists. Initial imports require globally distinct retained-record witnesses for every accepted canonical payload occurrence, including duplicates, across current and archived values. One record's several versions cannot stand in for several accepted occurrences, even when their payloads differ. The checker allows valid converging revisions by reassigning witnesses when needed.
+
+The stronger initial-import proof passed all 13 years, covering **377,477 accepted occurrences**; 2026 has no preexisting accepted rows. A further complete repeat preserved all **404,747 retained IDs**, reconciled the same totals, and produced zero file changes. Evidence is retained in `.cache/incident-audit-full/replay-fixed-retention-proof.json`, `audit-retained-history.json`, and `replay-fixed-verification.json`. The revised unit suite has **74 passing tests**; Ruff and whitespace checks pass. No accepted datasets changed.
