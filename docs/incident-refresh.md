@@ -70,3 +70,24 @@ Matching first pairs equivalent business payloads within the same year and CCN, 
 The cleaned annual dataset uses only current retained versions, with metadata columns, and excludes the version archive. Default totals therefore include retained absent records. Filter `present_in_latest_source == true` for the current published subset; a blank value denotes a year that has not yet been observed by this system. Consumers must choose their intended population explicitly.
 
 The initial 2014 comparison on 2026-11-15 found 38,407 source rows versus 38,486 accepted rows: 105 missing and 26 additions. Retention yields 38,512 records. Many payloads have geographical revisions; initial version archives can consequently be large. Matching decisions and source disappearance are observations, not proof of why a publisher removed or changed a record.
+
+## Full local audit before running Actions
+
+Use the batch tool to find historical problems together and replay the real refresh offline. `.cache/` is ignored by Git; full exports and generated history stay outside the accepted data tree.
+
+```sh
+# Capture all published annual layers, with completeness validation and checksums.
+uv run python -m scripts.audit_incidents --cache-dir .cache/incident-audit --download
+# Audit every duplicate-CCN group across the refresh scope; collect all failures.
+uv run python -m scripts.audit_incidents --cache-dir .cache/incident-audit
+# Run the actual annual refresh, retained-history generation, ETL and PR reporting.
+uv run python -m scripts.audit_incidents --cache-dir .cache/incident-audit --replay
+# Repeat against its generated history; require no changes and reconcile totals.
+uv run python -m scripts.audit_incidents --cache-dir .cache/incident-audit --verify-replay
+```
+
+The capture contains all published years; refresh replay imports only years at/after the earliest accepted annual file, following production scope. Source downloads are bounded to three workers. Capture resumes valid files after an interrupted download and saves a manifest of source URLs, retrieval times, row counts and hashes. Reusing a cache preserves its frozen snapshot, rather than silently refreshing already captured files. Choose a new cache directory for a fresh source snapshot.
+
+`audit.json` lists all failed groups with accepted/source rows; it is not limited to the first error. A successful preflight does not replace the full replay: ETL and reporting can have independent failures. A replay starts in `<cache>/replay`, never overwrites a previous replay, and accepts `--replay-name` for subsequent attempts. Its observation date is the latest retrieval date in the cache; generated dates are replay evidence, not newly acquired live observations. PR and run summaries and verification JSON remain in the cache. Verification checks raw snapshot fidelity, retained/source totals, archived-version counts, unique cleaned record IDs, and same-snapshot idempotence. This tool does not publish or create a GitHub PR.
+
+The initial full audit exposed four groups whose corrected block ranges also changed coordinates. An additional match pass uses offense, method, report time and the full incident interval when block location changes. The two-sided equivalence guard still applies; distinct competing payloads remain an error. Genuine address revisions are archived rather than normalized away. Regression fixtures preserve the four observed failures in both incoming orders.

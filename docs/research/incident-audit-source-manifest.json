@@ -1,0 +1,139 @@
+{
+  "exports": {
+    "2020": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/2",
+      "rows": 27932,
+      "retrieved_at": "2026-11-16T01:05:58.561171+00:00",
+      "sha256": "26a4b1dfec16d8581f7a9f4acd62cd7fa0f001f3c36de8e702d64a7980df7dbb"
+    },
+    "2018": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/0",
+      "rows": 33846,
+      "retrieved_at": "2026-11-16T01:06:01.567155+00:00",
+      "sha256": "911abc87f123a940e12de377d0c2521eb5a7e9ba488fec57c7d3c44440bf9227"
+    },
+    "2019": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/1",
+      "rows": 33968,
+      "retrieved_at": "2026-11-16T01:06:01.632264+00:00",
+      "sha256": "9bfac77ecfcd1a0b4f9934ab7bbdb0bb9a14e0131af5bfdfe4c389e2bc3592d6"
+    },
+    "2021": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/3",
+      "rows": 28320,
+      "retrieved_at": "2026-11-16T01:06:15.139158+00:00",
+      "sha256": "d2f1f33cea4ff43c215650744e72d9a4bf747603c94326b4d26ea20140b4dcf2"
+    },
+    "2022": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/4",
+      "rows": 27162,
+      "retrieved_at": "2026-11-16T01:06:17.900921+00:00",
+      "sha256": "67fb7ac8c0995c58d81c0fd59b824a9832868f3f10cb922b3605373a4e79efb1"
+    },
+    "2023": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/5",
+      "rows": 34236,
+      "retrieved_at": "2026-11-16T01:06:22.977447+00:00",
+      "sha256": "8f8804ca1cda0a71e3028417bfe76cb9c6eec1970d9dfd4cf125d59c30a012c5"
+    },
+    "2024": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/6",
+      "rows": 29304,
+      "retrieved_at": "2026-11-16T01:06:32.277292+00:00",
+      "sha256": "077fcd2ada756a28aa6c985af3feff190656ca76d39186f8d03b6b92e82cbb62"
+    },
+    "2025": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/7",
+      "rows": 24156,
+      "retrieved_at": "2026-11-16T01:06:33.066766+00:00",
+      "sha256": "ce5af3dd9a08d66ef5f40370e77b775c172b119e80c6afeecb407e143b4602a3"
+    },
+    "2013": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/10",
+      "rows": 35871,
+      "retrieved_at": "2026-11-16T01:06:47.480103+00:00",
+      "sha256": "70e0dd3fbd63918e2fbc0afc4d9d12fc1c9a053ceb5c916fb65938f8da2afdd9"
+    },
+    "2012": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/11",
+      "rows": 35271,
+      "retrieved_at": "2026-11-16T01:06:55.968779+00:00",
+      "sha256": "a360a5283278ce299ad5a628567101f2231f035406ca8542c55b3ecafa9c2543"
+    },
+    "2016": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/26",
+      "rows": 37189,
+      "retrieved_at": "2026-11-16T01:06:58.241972+00:00",
+      "sha256": "f20f0c0cadb02942f167e818124631e0baf9965b42e5c80270586e404edc6ca3"
+    },
+    "2015": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/27",
+      "rows": 37181,
+      "retrieved_at": "2026-11-16T01:07:08.289995+00:00",
+      "sha256": "46136d8ae74d222e742ce77cd02ade4d07ad4c4893e6bd3033530e89d493fce6"
+    },
+    "2009": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/33",
+      "rows": 31354,
+      "retrieved_at": "2026-11-16T01:07:17.656079+00:00",
+      "sha256": "57700bd621173b034efea8869edcdbf871972a33ff0e088a7871313c2020e91f"
+    },
+    "2008": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/32",
+      "rows": 34326,
+      "retrieved_at": "2026-11-16T01:07:17.744413+00:00",
+      "sha256": "79afe646aa0a389b13f10e6f309dffbcc46ced6f9850126f106ccad80b8535b0"
+    },
+    "2010": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/34",
+      "rows": 31686,
+      "retrieved_at": "2026-11-16T01:07:26.768449+00:00",
+      "sha256": "d31606f9433bd4a6915043508476b6edd385ff513aaff05382cfd384f99a2da4"
+    },
+    "2017": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/38",
+      "rows": 33094,
+      "retrieved_at": "2026-11-16T01:07:36.256140+00:00",
+      "sha256": "39c5714adfcfda0074da744c15bd4ebab1144c9a04d827893122c367194a9e87"
+    },
+    "2011": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/35",
+      "rows": 33222,
+      "retrieved_at": "2026-11-16T01:07:38.409659+00:00",
+      "sha256": "0e1c81dcf2c72360253dfc91e2129adafd372612f100612327295fc37fe17337"
+    },
+    "2014": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/40",
+      "rows": 38407,
+      "retrieved_at": "2026-11-16T01:07:47.519325+00:00",
+      "sha256": "f244973ad799f542586c6ea77f248d3d4c7012635f3d1d7ce813a37cdd44c9f4"
+    },
+    "2026": {
+      "source": "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer/41",
+      "rows": 19270,
+      "retrieved_at": "2026-11-16T01:07:48.581042+00:00",
+      "sha256": "69058c2292767eda22b47ae3b35d6d2086196c126a430d6cca6efdaaf1e9cc79"
+    }
+  },
+  "layers": {
+    "2018": 0,
+    "2019": 1,
+    "2020": 2,
+    "2021": 3,
+    "2022": 4,
+    "2023": 5,
+    "2024": 6,
+    "2025": 7,
+    "2013": 10,
+    "2012": 11,
+    "2016": 26,
+    "2015": 27,
+    "2008": 32,
+    "2009": 33,
+    "2010": 34,
+    "2011": 35,
+    "2017": 38,
+    "2014": 40,
+    "2026": 41
+  }
+}
