@@ -18,6 +18,7 @@ VOLATILE = {"OBJECTID", "OCTO_RECORD_ID", "X", "Y"}
 DATES = {"REPORT_DAT", "START_DATE", "END_DATE"}
 NUMERIC = {"X", "Y", "XBLOCK", "YBLOCK", "LATITUDE", "LONGITUDE"}
 ANCHOR = ("OFFENSE", "METHOD", "REPORT_DAT", "START_DATE", "BLOCK")
+INTERVAL_ANCHOR = ("OFFENSE", "METHOD", "REPORT_DAT", "START_DATE", "END_DATE")
 
 
 def normalize(frame):
@@ -134,6 +135,10 @@ def reconcile(year, baseline, observed, *, current=None, versions=None, on):
         match_by(business)
         # Exact values reconnect missing/reappearing records before corrections.
         match_by(ANCHOR)
+        # A publisher may correct a block range as well as its coordinates.
+        # Keep the complete time interval and offense/method fixed, and retain
+        # the same two-sided equivalence guard as every other matching pass.
+        match_by(INTERVAL_ANCHOR)
         if old and remaining:
             if len(old) != 1 or len(remaining) != 1:
                 raise ValueError(

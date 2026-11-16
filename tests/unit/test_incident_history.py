@@ -152,3 +152,36 @@ def test_whitespace_only_block_change_preserves_values_without_new_version():
     assert archive.empty and stats["revised"] == 0
     assert set(latest.record_id) == set(current.record_id)
     assert latest.iloc[0].BLOCK == incoming.iloc[0].BLOCK
+
+
+@pytest.mark.parametrize("case", range(4))
+@pytest.mark.parametrize("reverse", [False, True])
+def test_full_download_address_corrections_retain_duplicate_history(case, reverse):
+    import json
+    from pathlib import Path
+
+    fixture = Path(__file__).parents[1] / "fixtures/incident_address_corrections.json"
+    issue = json.loads(fixture.read_text())[case]
+    old, incoming = pd.DataFrame(issue["accepted"]), pd.DataFrame(issue["observed"])
+    current, versions, _ = reconcile(issue["year"], old, old, on="2026-11-15")
+    if reverse:
+        incoming = incoming.iloc[::-1].reset_index(drop=True)
+    latest, archive, stats = reconcile(issue["year"], old, incoming, current=current,
+                                       versions=versions, on="2026-11-16")
+    assert set(latest.record_id) == set(current.record_id)
+    assert stats["added"] == stats["absent_rows"] == 0
+    assert stats["revised"] == len(old)
+    assert len(archive) == len(old)
+    assert set(archive.BLOCK) == set(old.BLOCK)
+    assert set(latest.BLOCK) == set(incoming.BLOCK)
+    assert set(latest.first_seen_on) == {"2026-11-15"}
+    assert set(latest.last_seen_on) == {"2026-11-16"}
+
+
+def test_address_fallback_does_not_guess_when_time_interval_also_changes():
+    old = rows(("14000001", "THEFT"), ("14000001", "THEFT"))
+    incoming = old.copy()
+    incoming["BLOCK"] = "NEW LOCATION"
+    incoming["END_DATE"] = "2014-06-01T13:00:00Z"
+    with pytest.raises(ValueError, match="ambiguous correction"):
+        reconcile(2014, old, incoming, on="2026-11-16")
