@@ -29,6 +29,8 @@ def normalize(frame):
             frame[column] = parsed.dt.strftime("%Y-%m-%dT%H:%M:%SZ").fillna("")
         elif column in NUMERIC:
             frame[column] = frame[column].map(lambda v: format(float(v), ".6f") if v else "")
+        elif column == "BLOCK":
+            frame[column] = frame[column].str.replace(r"\s+", " ", regex=True).str.strip()
         elif column == "CCN":
             numeric = frame[column].str.fullmatch(r"\d+")
             frame.loc[numeric, column] = frame.loc[numeric, column].str.zfill(8)
@@ -103,23 +105,31 @@ def reconcile(year, baseline, observed, *, current=None, versions=None, on):
         remaining = list(incoming)
 
         def match_by(fields):
-            for new in list(remaining):
-                candidates = [i for i in old if signature(records[i], fields) ==
-                              signature(observations[new], fields)]
+            old_matches, new_matches = defaultdict(list), defaultdict(list)
+            for previous in old:
+                old_matches[signature(records[previous], fields)].append(previous)
+            for new in remaining:
+                new_matches[signature(observations[new], fields)].append(new)
+            for key, incoming_matches in new_matches.items():
+                candidates = old_matches[key]
                 if not candidates:
                     continue
-                # Indistinguishable duplicates may be matched as occurrences; if
-                # their business values differ, a shared anchor is ambiguous.
-                if len(candidates) > 1 and len({signature(records[i], business)
-                                               for i in candidates}) > 1:
+                # Check the entire group on BOTH sides before consuming any
+                # match. Only business-equivalent duplicates are interchangeable.
+                if len({signature(records[i], business) for i in candidates}) > 1 or len({
+                    signature(observations[i], business) for i in incoming_matches
+                }) > 1:
                     continue
-                # An unchanged publisher ID is only a tie-breaker between
-                # otherwise indistinguishable occurrences, never identity proof.
-                previous = next((i for i in candidates if records[i]["OBJECTID"] ==
-                                 observations[new]["OBJECTID"]), candidates[0])
-                pairs.append((previous, new))
-                old.remove(previous)
-                remaining.remove(new)
+                for new in incoming_matches:
+                    if not candidates:
+                        break
+                    # Publisher IDs only break ties between equivalent payloads.
+                    previous = next((i for i in candidates if records[i]["OBJECTID"] ==
+                                     observations[new]["OBJECTID"]), candidates[0])
+                    pairs.append((previous, new))
+                    candidates.remove(previous)
+                    old.remove(previous)
+                    remaining.remove(new)
 
         match_by(business)
         # Exact values reconnect missing/reappearing records before corrections.
