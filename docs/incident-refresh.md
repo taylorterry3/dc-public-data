@@ -24,7 +24,7 @@ Local commands write validated raw and annual cleaned files in the checkout; ins
 
 Layers are discovered by exact year-specific names rather than inferred numeric IDs. The downloader obtains the full source OBJECTID list, retrieves bounded batches, reconciles each batch, then checks the full ID list again. Truncation, missing/duplicate IDs, and changed ID snapshots fail the run. Source changes that preserve the ID list cannot be ruled out; this endpoint does not offer a transactional snapshot.
 
-Required columns and values, dates, report-year membership, unique OBJECTIDs within each annual export, and counts against accepted `main` files are checked. CCN remains a string and is allowed to repeat. Incident start dates may precede the report year; missing start/end dates are allowed, as in the accepted source files. Empty exports and count decreases fail closed, including legitimate publisher deletions. There is no bypass flag: investigate and prepare a separately reviewed manual correction.
+Required columns and values, dates, report-year membership, unique OBJECTIDs within each annual export, and export completeness are checked. CCN remains a string and is allowed to repeat. Incident start dates may precede the report year; missing start/end dates are allowed, as in the accepted source files. Empty or incomplete exports still fail closed. A lower raw count is allowed: records absent from a complete snapshot are retained in the history dataset and flagged absent. PR summaries show source, retained, absent and archived-version counts for review.
 
 REST dates are serialized in UTC. Source geometry supplies the existing X/Y columns in EPSG:26985. Identifiers remain strings when reading CSVs for ETL. The first export may have formatting-only differences from old portal CSVs. Thereafter deterministic row ordering, CSV formatting and gzip timestamps prevent identical downloads from generating commits.
 
@@ -34,9 +34,9 @@ All attempted years validate before annual ETL runs and checkout files are repla
 
 The bot owns `automation/annual-incidents`. Successful runs update its open PR rather than creating a new PR every day. Do manual corrections on a separate branch: bot updates may replace edits on its own branch.
 
-While a PR is open, its branch is merged into current `main` in the disposable checkout before refreshing recent years. Full Git history supplies the common ancestor. Conflicts stop the run before publication; nonconflicting accepted corrections and pending updates are preserved. The merged diff is left uncommitted against `main` for the PR action, and pending raw changes trigger a cleaned-data rebuild. All pending annual files, including years skipped by daily downloads, are validated against accepted counts. Count checks still compare against a separate snapshot of accepted `main`, not the bot branch. A failed download/validation/ETL never reaches the PR action, so the remote PR is left unchanged. The temporary Actions checkout can be discarded on failure.
+While a PR is open, its branch is merged into current `main` in the disposable checkout before refreshing recent years. Full Git history supplies the common ancestor. Conflicts stop the run before publication; nonconflicting accepted corrections and pending updates are preserved. The merged diff is left uncommitted against `main` for the PR action, and pending raw changes trigger a cleaned-data rebuild. Pending annual files still receive schema and date validation. The accepted snapshot seeds initial history, so a smaller pending raw snapshot cannot discard accepted records during migration. Merged historical raw corrections are reconciled with unknown observation dates; they do not fabricate a fresh sighting. A failed download/validation/ETL never reaches the PR action, so the remote PR is left unchanged. The temporary Actions checkout can be discarded on failure.
 
-The PR includes only `data/raw/Crime_Incidents_in_*.csv` and `data/clean/incident_data.csv.gz`. Review and merge it manually. There is no auto-merge or production deployment. No new failure issues are created: inspect the failed Actions step and run summary. Cached sweep markers are saved only after successful download, validation and PR handling.
+The PR includes `data/raw/Crime_Incidents_in_*.csv`, `data/clean/incident_data.csv.gz`, and `data/history/incidents/`. Review and merge it manually. There is no auto-merge or production deployment. No new failure issues are created: inspect the failed Actions step and run summary. Cached sweep markers are saved only after successful download, validation and PR handling.
 
 ## GitHub setup
 
@@ -45,3 +45,28 @@ The workflow uses the repository `GITHUB_TOKEN` with `contents: write` and `pull
 Source code and unit tests should be reviewed before merging the workflow into `main`, where scheduled workflows run. Actions-created PRs may require approval for downstream workflows, depending on GitHub policy. This workflow does not depend on Claude reviews to validate downloads.
 
 Public source requests have bounded retries and timeouts. A first monthly sweep makes more requests than a daily refresh and may encounter source outages; rerun after investigation. A successful run proves export validity against these checks, not the publisher's completeness or timeliness.
+
+
+## Retained records and version history
+
+For each downloaded year, `data/history/incidents/<year>/current.csv.gz` contains one current version of every retained occurrence. `versions.csv.gz` archives prior values when business fields change. Raw annual files remain faithful source snapshots. The ordinary annual ETL also reads this history, so rerunning `scripts.ETL --only incidents` preserves retained records.
+
+History payload values are preserved as strings. Metadata columns are:
+
+| Column | Meaning |
+| --- | --- |
+| `record_id` | Project-owned occurrence identifier, scoped by annual report year |
+| `first_seen_on`, `last_seen_on` | First and last successful complete refresh dates observing this record |
+| `present_in_latest_source` | `true` or `false` for that year's latest complete snapshot; blank means unobserved |
+| `version` | Monotonic version number within the retained record |
+| `version_first_seen_on`, `version_last_seen_on` | Observation dates for the current payload values |
+| `baseline_imported_on` | Date the legacy accepted row was imported, when known; not a source observation |
+| `superseded_on` | Date a replacement was observed; only present in the archive |
+
+Observation dates use America/New_York and describe successful acquisitions, not incident dates. On migration, existing accepted rows have unknown observation dates until actually seen. A legacy row already absent from the current source retains unknown first/last dates. A missing record keeps its last-seen date; a reappearance reconnects its identity where matching is unambiguous. Skipped years retain their dates. Successful next-day observations advance last-seen dates even when the source data is unchanged, so history-only review PR changes are expected. Failed runs publish neither observations nor dates.
+
+Matching first pairs equivalent business payloads within the same year and CCN, then unambiguous offense/method/report-date/start-date/block anchors, then a single remaining old/new pair within the CCN. Publisher OBJECTID/OCTO_RECORD_ID and derived X/Y do not prove longitudinal identity. Formatting is normalized for comparison only (dates in UTC, numeric coordinate precision to six decimals); payload values stay intact in storage. Distinct coordinate changes outside that precision are revisions. Publisher-ID-only changes update the current payload without creating a business version. Indistinguishable duplicates retain multiplicity; their individual continuity is unknowable, so equivalent occurrences use a deterministic tie-breaker. Multiple unmatched non-equivalent candidates fail for manual mapping rather than silently coalescing records. CCN changes and moves between annual report years are conservatively treated as a disappearance plus an addition.
+
+The cleaned annual dataset uses only current retained versions, with metadata columns, and excludes the version archive. Default totals therefore include retained absent records. Filter `present_in_latest_source == true` for the current published subset; a blank value denotes a year that has not yet been observed by this system. Consumers must choose their intended population explicitly.
+
+The initial 2014 comparison on 2026-11-15 found 38,407 source rows versus 38,486 accepted rows: 105 missing and 26 additions. Retention yields 38,512 records. Many payloads have geographical revisions; initial version archives can consequently be large. Matching decisions and source disappearance are observations, not proof of why a publisher removed or changed a record.

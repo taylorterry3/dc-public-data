@@ -69,7 +69,7 @@ jobs:
           baseline = Path(os.environ['RUNNER_TEMP']) / 'incident-accepted'
           paths = subprocess.check_output(
               ['git', 'ls-files', 'data/raw/Crime_Incidents_in_*.csv',
-               'data/clean/incident_data.csv.gz'], text=True
+               'data/clean/incident_data.csv.gz', 'data/history/incidents/**'], text=True
           ).splitlines()
           for name in paths:
               path = baseline / name
@@ -110,6 +110,7 @@ jobs:
           add-paths: |
             data/raw/Crime_Incidents_in_*.csv
             data/clean/incident_data.csv.gz
+            data/history/incidents/
       - name: Remember successful monthly sweep
         if: steps.history.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4

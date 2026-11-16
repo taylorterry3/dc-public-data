@@ -13,10 +13,10 @@ Status: design confirmed; implementation complete locally. Deployment awaits rev
 - Schedule: daily at 9 a.m. America/New_York, with a manual run option. This is a polling policy, not a guarantee of source freshness. See [cadence research](research/crime-data-update-cadence.md).
 - PR lifecycle: update one existing refresh PR while it remains open.
 - Historical coverage: include corrections to years already represented in the repo and discover newly available years.
-- Validation: fail the run on download failures, missing required columns, duplicate record identifiers, or record-count decreases relative to accepted data. Preserve accepted data; legitimate deletions require explicit review.
+- Validation: fail on download failures, missing required columns, invalid dates, duplicate source row identifiers, or incomplete exports. The retained-history policy below supersedes the original count-decrease rejection.
 - Historical checking: use lightweight source-change checks where supported and download only changed years. Where reliable change detection is unavailable, download current and previous years daily and sweep historical years monthly.
 - Failure visibility: use GitHub Actions failed-run status and a run summary identifying the failed source or validation. Do not automatically create failure issues.
-- Legitimate deletions: stop for a manual correction; the first version has no automated validation bypass.
+- Disappearances: retain records with presence flags and first/last observation dates; archive prior payload versions on correction. Raw counts may decrease, but history retains accepted records. Ambiguous matching stops for manual mapping.
 - Partial failures: if any attempted year fails download or validation, fail the entire run and leave the refresh PR unchanged. Stage changes separately until every attempted year passes.
 
 ## Current behavior

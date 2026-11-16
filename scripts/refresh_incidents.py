@@ -17,6 +17,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from scripts.etl.common import data_cleanup
+from scripts.etl.incident_history import load_annual, normalize, reconcile
 
 SERVICE = "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer"
 DATES = ("REPORT_DAT", "START_DATE", "END_DATE")
@@ -107,7 +108,7 @@ def download(year, layer, fetch=request_json):
     return df[COLUMNS].sort_values("OBJECTID").reset_index(drop=True)
 
 
-def validate(df, year, old=None):
+def validate(df, year):
     missing = set(COLUMNS) - set(df.columns)
     if missing or df.empty:
         raise ValueError(f"{year}: empty data or missing columns {sorted(missing)}")
@@ -121,8 +122,6 @@ def validate(df, year, old=None):
         raise ValueError(f"{year}: report dates outside the annual dataset")
     pd.to_datetime(df.START_DATE.replace("", None), format="mixed", utc=True, errors="raise")
     pd.to_datetime(df.END_DATE.replace("", None), format="mixed", utc=True, errors="raise")
-    if old is not None and len(df) < len(old):
-        raise ValueError(f"{year}: record count decreased ({len(old)} -> {len(df)})")
 
 
 def read_csv(path):
@@ -161,13 +160,43 @@ def refresh(
         warnings.append(f"Current year {now.year} has not been published by the source.")
     results = []
     changed = []
+    history = root / "data/history/incidents"
+    history_current = {
+        int(p.parent.name): p for p in history.glob("*/current.csv.gz")
+    }
+    history_stats = {}
     with tempfile.TemporaryDirectory(prefix="incident-refresh-") as temp:
         staging = Path(temp)
+
+        def stage_history(year, observed, old, observation_date):
+            current_path = history / str(year) / "current.csv.gz"
+            versions_path = history / str(year) / "versions.csv.gz"
+            current = read_csv(current_path) if current_path.exists() else None
+            versions = read_csv(versions_path) if versions_path.exists() else None
+            # Import accepted data, not a potentially smaller pending raw snapshot.
+            legacy = old if old is not None else observed.iloc[:0]
+            current, versions, stats = reconcile(
+                year, legacy, observed, current=current, versions=versions, on=observation_date,
+            )
+            history_stats[year] = stats
+            for name, frame, dest in (
+                ("current.csv.gz", current, current_path),
+                ("versions.csv.gz", versions, versions_path),
+            ):
+                path = staging / "history" / str(year) / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                frame.to_csv(path, index=False, compression={"method": "gzip", "mtime": 0})
+                if not dest.exists() or path.read_bytes() != dest.read_bytes():
+                    changed.append((path, dest))
+                if name == "current.csv.gz":
+                    history_current[year] = path
+
         for year in years:
             df = download(year, layers[year], fetch)
             accepted_path = baseline / f"Crime_Incidents_in_{year}.csv"
             old = read_csv(accepted_path) if accepted_path.exists() else None
-            validate(df, year, old)
+            validate(df, year)
+            stage_history(year, df, old, now.strftime("%Y-%m-%d"))
             print(f"Validated {year}: {len(df):,} rows", flush=True)
             path = staging / f"Crime_Incidents_in_{year}.csv"
             df.to_csv(path, index=False, lineterminator="\n")
@@ -182,8 +211,26 @@ def refresh(
                 "maximum_report_date": df.REPORT_DAT.max(),
                 "changed": not accepted_path.exists() or
                 path.read_bytes() != accepted_path.read_bytes(),
-                "updated_this_run": is_changed,
+                "updated_this_run": is_changed, "history": history_stats[year],
             })
+        # A pre-history bot PR may contain historical raw changes with unknown
+        # observation dates. Migrate them without inventing a fresh sighting.
+        for year, path in existing.items():
+            if year in years:
+                continue
+            accepted_path = baseline / path.name
+            pending = read_csv(path)
+            if year in history_current:
+                current = read_csv(history_current[year])
+                represented = current[current.present_in_latest_source == "true"][COLUMNS]
+                differs = not normalize(pending).sort_values("OBJECTID").reset_index(
+                    drop=True,
+                ).equals(normalize(represented).sort_values("OBJECTID").reset_index(drop=True))
+            else:
+                differs = accepted_path.exists() and path.read_bytes() != accepted_path.read_bytes()
+            if differs:
+                old = read_csv(accepted_path) if accepted_path.exists() else None
+                stage_history(year, pending, old, "")
         pending_raw = any(
             not (baseline / p.name).exists() or
             p.read_bytes() != (baseline / p.name).read_bytes()
@@ -196,11 +243,12 @@ def refresh(
             clean_existing.read_bytes() != clean_baseline.read_bytes()
         )
         if changed or pending_raw or pending_clean:
-            replacements = {dest.name: source for source, dest in changed}
+            replacements = {dest.name: source for source, dest in changed if dest.parent == raw}
             files = {p.name: p for p in existing.values()}
             files.update(replacements)
-            combined = pd.concat(
-                [read_csv(files[name]) for name in sorted(files)], ignore_index=True,
+            combined = load_annual(
+                {int(Path(name).stem.rsplit("_", 1)[1]): path for name, path in files.items()},
+                history_current,
             )
             cleaned = data_cleanup(combined, "START_DATE")
             clean_path = staging / "incident_data.csv.gz"
@@ -223,7 +271,7 @@ def refresh(
             year = int(path.stem.rsplit("_", 1)[1])
             df = read_csv(path)
             old = read_csv(accepted_path) if accepted_path.exists() else None
-            validate(df, year, old)
+            validate(df, year)
             digest = hashlib.sha256(content).hexdigest()
             pending_years.append({
                 "year": year, "source": f"{SERVICE}/{layers[year]}", "rows": len(df),
@@ -245,6 +293,30 @@ def refresh(
                 "path": str(clean_relative),
                 "sha256": hashlib.sha256(clean_candidate.read_bytes()).hexdigest(),
             })
+        # History files are reviewable even on days with no raw source changes.
+        history_candidates = {p.relative_to(root): p for p in history.glob("*/*.csv.gz")}
+        history_candidates.update({
+            dest.relative_to(root): src for src, dest in changed if history in dest.parents
+        })
+        pending_history = []
+        for relative, path in sorted(history_candidates.items()):
+            accepted_path = (accepted_root or root) / relative
+            if not accepted_path.exists() or path.read_bytes() != accepted_path.read_bytes():
+                pending_files.append({
+                    "path": str(relative), "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                })
+                if path.name == "current.csv.gz":
+                    year = int(relative.parent.name)
+                    current = read_csv(path)
+                    version_relative = relative.with_name("versions.csv.gz")
+                    version_path = history_candidates.get(version_relative)
+                    pending_history.append({
+                        "year": year, "source": f"{SERVICE}/{layers[year]}",
+                        "source_rows": len(read_csv(files[f"Crime_Incidents_in_{year}.csv"])),
+                        "retained_rows": len(current),
+                        "absent_rows": int(current.present_in_latest_source.eq("false").sum()),
+                        "archived_versions": len(read_csv(version_path)) if version_path else 0,
+                    })
         # All downloads, validation, ETL and reporting have succeeded.
         if changed:
             for source, dest in changed:
@@ -258,6 +330,7 @@ def refresh(
         "retrieved_at": datetime.now(timezone.utc).isoformat(),
         "historical_sweep": full_history, "warnings": warnings, "years": results,
         "pending_years": pending_years, "pending_files": pending_files,
+        "history": history_stats, "pending_history": pending_history,
         "changed_files": [str(dest.relative_to(root)) for _, dest in changed],
     }
 
@@ -274,8 +347,17 @@ def render_report(result, *, pending=False):
         lines.append(
             f"| {item['year']} | {item['previous_rows']} | {item['rows']} | {item['changed']} |"
         )
-    payload = {"years": years, "files": result["pending_files"]} if pending else result
+    payload = {"years": years, "files": result["pending_files"],
+               "pending_history": result["pending_history"]} if pending else result
     if pending:
+        lines += ["", "### Retained history pending review", "",
+                  "| Year | Source rows | Retained records | Absent | Archived versions |",
+                  "| --- | --- | --- | --- | --- |"]
+        for item in result["pending_history"]:
+            lines.append(
+                f"| {item['year']} | {item['source_rows']} | {item['retained_rows']} | "
+                f"{item['absent_rows']} | {item['archived_versions']} |"
+            )
         lines += ["", "Includes preserved historical changes not downloaded this run.",
                   "Hashes describe the pending files; report time is not their retrieval time."]
     lines += ["", "Source URLs and export hashes:", "", "```json",
