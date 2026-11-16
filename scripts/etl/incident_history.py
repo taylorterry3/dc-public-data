@@ -29,6 +29,8 @@ def normalize(frame):
             frame[column] = parsed.dt.strftime("%Y-%m-%dT%H:%M:%SZ").fillna("")
         elif column in NUMERIC:
             frame[column] = frame[column].map(lambda v: format(float(v), ".6f") if v else "")
+        elif column == "BLOCK":
+            frame[column] = frame[column].str.replace(r"\s+", " ", regex=True).str.strip()
         elif column == "CCN":
             numeric = frame[column].str.fullmatch(r"\d+")
             frame.loc[numeric, column] = frame.loc[numeric, column].str.zfill(8)

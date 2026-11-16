@@ -117,3 +117,38 @@ def test_equivalent_incoming_duplicates_still_preserve_multiplicity():
     assert stats["revised"] == stats["added"] == 1
     assert len(archive) == 1
     assert archive.iloc[0].WARD == "1"
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_block_whitespace_does_not_ambiguously_split_revised_duplicates(reverse):
+    old = rows(("18067757", "SEX ABUSE"), ("18067757", "SEX ABUSE"))
+    old["BLOCK"] = "500 - 699 BLOCK OF RANDOLPH STREET NW"
+    old["LATITUDE"] = "38.9388072732"
+    current, versions, _ = reconcile(2018, old, old, on="2026-11-15")
+    incoming = old.copy()
+    incoming["BLOCK"] = " 500  - 699 BLOCK OF RANDOLPH STREET NW "
+    incoming["LATITUDE"] = "38.938803"
+    incoming["OBJECTID"] = ["100", "200"]
+    if reverse:
+        incoming = incoming.iloc[::-1].reset_index(drop=True)
+    latest, archive, stats = reconcile(2018, old, incoming, current=current,
+                                       versions=versions, on="2026-11-16")
+    assert set(latest.record_id) == set(current.record_id)
+    assert stats["revised"] == 2
+    assert stats["added"] == stats["absent_rows"] == 0
+    assert len(archive) == 2
+    assert set(archive.BLOCK) == set(old.BLOCK)
+    assert set(latest.BLOCK) == set(incoming.BLOCK)
+
+
+def test_whitespace_only_block_change_preserves_values_without_new_version():
+    old = rows(("14000001", "THEFT"))
+    old["BLOCK"] = "500 - 699 BLOCK OF RANDOLPH STREET NW"
+    current, versions, _ = reconcile(2014, old, old, on="2026-11-15")
+    incoming = old.copy()
+    incoming["BLOCK"] = "500  - 699 BLOCK OF RANDOLPH STREET NW"
+    latest, archive, stats = reconcile(2014, old, incoming, current=current,
+                                       versions=versions, on="2026-11-16")
+    assert archive.empty and stats["revised"] == 0
+    assert set(latest.record_id) == set(current.record_id)
+    assert latest.iloc[0].BLOCK == incoming.iloc[0].BLOCK
