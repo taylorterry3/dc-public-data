@@ -86,3 +86,34 @@ def test_archive_preserves_original_payload_formatting():
                                versions=versions, on="2026-11-17")
     assert versions.iloc[0].REPORT_DAT == "2014/06/01 12:00:00+00"
     assert versions.iloc[0].X == "1.234567890"
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_competing_incoming_anchor_revisions_fail_regardless_of_order(reverse):
+    old = rows(("14000001", "THEFT"))
+    old["WARD"] = "1"
+    current, versions, _ = reconcile(2014, old, old, on="2026-11-16")
+    incoming = rows(("14000001", "THEFT"), ("14000001", "THEFT"))
+    incoming["WARD"] = ["2", "3"]
+    if reverse:
+        incoming = incoming.iloc[::-1].reset_index(drop=True)
+    before = current.copy(deep=True)
+    with pytest.raises(ValueError, match="ambiguous correction"):
+        reconcile(2014, old, incoming, current=current, versions=versions, on="2026-11-17")
+    pd.testing.assert_frame_equal(current, before)
+    assert versions.empty
+
+
+def test_equivalent_incoming_duplicates_still_preserve_multiplicity():
+    old = rows(("14000001", "THEFT"))
+    old["WARD"] = "1"
+    current, versions, _ = reconcile(2014, old, old, on="2026-11-16")
+    incoming = rows(("14000001", "THEFT"), ("14000001", "THEFT"))
+    incoming["WARD"] = "2"
+    latest, archive, stats = reconcile(2014, old, incoming, current=current,
+                                       versions=versions, on="2026-11-17")
+    assert len(latest) == 2
+    assert set(current.record_id) < set(latest.record_id)
+    assert stats["revised"] == stats["added"] == 1
+    assert len(archive) == 1
+    assert archive.iloc[0].WARD == "1"
