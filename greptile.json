@@ -1,0 +1,6 @@
+{
+  "disabledLabels": [
+    "data-update"
+  ],
+  "ignoreKeywords": "[data-update]"
+}

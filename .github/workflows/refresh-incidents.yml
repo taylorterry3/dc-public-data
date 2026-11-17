@@ -104,7 +104,8 @@ jobs:
         with:
           branch: automation/annual-incidents
           base: main
-          title: Refresh annual crime incident data
+          title: '[data-update] Refresh annual crime incident data'
+          labels: data-update
           commit-message: Refresh validated annual crime incidents
           body-path: ${{ runner.temp }}/incident-pr.md
           add-paths: |
