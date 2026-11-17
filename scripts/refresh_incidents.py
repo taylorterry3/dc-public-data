@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -10,6 +11,7 @@ import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 from zoneinfo import ZoneInfo
@@ -18,6 +20,9 @@ import pandas as pd
 
 from scripts.etl.common import data_cleanup
 from scripts.etl.incident_history import load_annual, normalize, reconcile
+
+RETRYABLE_STATUS = {408, 429, 500, 502, 503, 504}
+LOGGER = logging.getLogger(__name__)
 
 SERVICE = "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/FeatureServer"
 DATES = ("REPORT_DAT", "START_DATE", "END_DATE")
@@ -29,20 +34,28 @@ COLUMNS = (
 
 
 def request_json(url, **params):
-    """Bounded retries for public, read-only requests; ArcGIS errors are fatal."""
+    """Retry transient public-source failures, including HTTP-200 ArcGIS errors."""
     target = url + "?" + urlencode({"f": "json", **params})
     for attempt in range(3):
         try:
             with urlopen(target, timeout=90) as response:
                 result = json.load(response)
-            break
+        except HTTPError as exc:
+            if exc.code not in RETRYABLE_STATUS or attempt == 2:
+                raise
         except (OSError, ValueError):
             if attempt == 2:
                 raise
-            time.sleep(2 ** attempt)
-    if "error" in result:
-        raise ValueError(f"ArcGIS error at {url}: {result['error']}")
-    return result
+        else:
+            if "error" not in result:
+                return result
+            error = result["error"]
+            if error.get("code") not in RETRYABLE_STATUS or attempt == 2:
+                raise ValueError(f"ArcGIS error at {url}: {error}")
+        delay = 2 ** attempt
+        LOGGER.warning("Transient source failure; retrying in %ss (attempt %s/3)",
+                       delay, attempt + 1)
+        time.sleep(delay)
 
 
 def discover(fetch=request_json):

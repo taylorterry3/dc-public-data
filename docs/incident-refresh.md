@@ -44,7 +44,7 @@ The workflow uses the repository `GITHUB_TOKEN` with `contents: write` and `pull
 
 Source code and unit tests should be reviewed before merging the workflow into `main`, where scheduled workflows run. Actions-created PRs may require approval for downstream workflows, depending on GitHub policy. This workflow does not depend on Claude reviews to validate downloads.
 
-Public source requests have bounded retries and timeouts. A first monthly sweep makes more requests than a daily refresh and may encounter source outages; rerun after investigation. A successful run proves export validity against these checks, not the publisher's completeness or timeliness.
+Public source requests have a 90-second I/O timeout and at most three attempts, with 1- and 2-second backoff. Transient codes 408, 429, 500, 502, 503 and 504 are retried whether returned as an HTTP failure or inside an ArcGIS JSON error response (which may arrive with HTTP 200). Network/JSON-decoding failures are also retried. Permanent service/query errors fail immediately; persistent transient errors still fail the run without publishing data. A first monthly sweep makes more requests than a daily refresh and may encounter source outages; rerun after investigation. A successful run proves export validity against these checks, not the publisher's completeness or timeliness.
 
 
 ## Retained records and version history
